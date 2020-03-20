@@ -177,18 +177,39 @@ class SOM:
     def __iter__(self):
         """Yield the unique coordinates for each neuron
         """
-        coords = product(*[np.arange(i) for i in self.som_shape[::-1]])
+        som_shape = (self.som_shape[0], self.som_shape[1] * self.som_shape[2])
+        coords = product(*[np.arange(i) for i in som_shape])
         for c in coords:
-            yield c
+            yield tuple(c)
 
     def __getitem__(self, key):
-        idxs = []
+        """Accesor for neurons on the SOM. Note that the 
+        depth dimension of the SOM lattice has been appended to the height
+        dimension
+        
+        Arguments:
+            key {tuple} -- Typical numeric index items to access the (C,X,Y) neuron.   
+            slices are supported
+        
+        Raises:
+            TypeError: Type error for elements of the key. Needs to be int or slice
+        
+        Returns:
+            numpy.ndarray -- Channel/s of neuron/s
+        """
 
-        if not isinstance(key, tuple):
+        # SOM has been reshaped so channels always at front. This
+        # initial slice ensure all channels are selected
+        idxs = [slice(None, None, None)]
+
+        # if not isinstance(key, tuple):
+        #     key = (key,)
+
+        if not hasattr(key, "__iter__"):
             key = (key,)
 
         for c, k in enumerate(key):
-            dkey = self.neuron_shape[c]
+            dkey = self.neuron_shape[c + 1]
 
             if np.issubdtype(type(k), np.integer):
                 idxs.append(slice(k * dkey, (k + 1) * dkey))
@@ -202,7 +223,7 @@ class SOM:
             else:
                 raise TypeError(f"{k} is not an int or slice")
 
-        return self.data[idxs]
+        return self.data[tuple(idxs)]
 
     @property
     def som_rank(self):
@@ -309,7 +330,11 @@ class Mapping:
         self.data_start = None
         self.read_header()
 
-        data_shape = (self.header[3], *self.som_shape)
+        data_shape = (
+            self.header[3],
+            self.som_shape[0],
+            self.som_shape[1] * self.som_shape[2],  # Get rid of depth
+        )
         self.data = np.memmap(
             self.path,
             dtype=self.dtype,
@@ -317,6 +342,12 @@ class Mapping:
             offset=self.data_start,
             shape=data_shape,
         )
+
+    def __iter__(self):
+        """Produce a key iterating over the image axis
+        """
+        for i in range(self.header[3]):
+            yield i
 
     def read_header(self):
         with open(self.path, "rb") as of:
@@ -349,3 +380,90 @@ class Mapping:
             return (*self.header[6], 1)
         return self.header[6]
 
+    def bmu(self, idx=None, squeeze=True, order="C"):
+        """Identify the position of the BMU for each image
+        """
+        if np.issubdtype(type(idx), np.integer):
+            idx = [idx]
+        data = self.data if idx is None else self.data[idx]
+
+        bmu = np.array(
+            np.unravel_index(
+                np.argmin(np.reshape(data, (data.shape[0], -1), order=order), axis=1),
+                data.shape[1:],
+            )
+        )
+
+        if squeeze:
+            return np.squeeze(bmu.T)
+        else:
+            return bmu.T
+
+
+class Transform:
+    def __init__(self, path):
+        self.path = path
+        self.offset = header_offset(self.path)
+
+        # Initiated to None, but set in read_header. Here as reminder
+        self.header = None
+        self.data_start = None
+        self.read_header()
+        self.dtype = np.dtype([("flip", np.int8), ("angle", np.float64)])
+
+        print(self.header)
+        print(self.som_shape)
+
+        data_shape = (
+            self.header[2],
+            self.som_shape[0],
+            self.som_shape[1] * self.som_shape[2],  # Get rid of depth
+        )
+        self.data = np.memmap(
+            self.path,
+            dtype=self.dtype,
+            order="C",
+            offset=self.data_start,
+            shape=data_shape,
+        )
+
+    def __iter__(self):
+        """Produce a key iterating over the image axis
+        """
+        for i in range(self.header[3]):
+            yield i
+
+    def read_header(self):
+        with open(self.path, "rb") as of:
+            of.seek(self.offset)
+
+            header = st.unpack("i" * 5, of.read(4 * 5))
+            ver, file_type, no_imgs, som_layout, som_rank = header
+
+            som_shape = st.unpack("i" * som_rank, of.read(4 * som_rank))
+
+            self.data_start = of.tell()
+            self.header = (ver, file_type, no_imgs, som_layout, som_rank, som_shape)
+
+    @property
+    def som_rank(self):
+        return self.header[4]
+
+    @property
+    def som_shape(self):
+        if self.som_rank == 2:
+            return (*self.header[5], 1)
+        return self.header[5]
+
+    def bmu(self, idx=None):
+        """Identify the position of the BMU for each image
+        """
+        data = self.data if idx is None else self.data[idx]
+
+        bmu = np.array(
+            np.unravel_index(
+                np.argmin(data.reshape(data.shape[0], -1), axis=1), data.shape[1:]
+            )
+        )
+
+        return bmu.T
