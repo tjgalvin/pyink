@@ -134,6 +134,7 @@ class ImageReader:
             offset=self.data_start,
             dtype=self.dtype,
             order="C",
+            mode="r",
             shape=data_shape,
         )
 
@@ -339,6 +340,7 @@ class Mapping:
             self.path,
             dtype=self.dtype,
             order="C",
+            mode="r",
             offset=self.data_start,
             shape=data_shape,
         )
@@ -401,7 +403,7 @@ class Mapping:
 
 
 class Transform:
-    def __init__(self, path):
+    def __init__(self, path, angle_dtype=np.float32):
         self.path = path
         self.offset = header_offset(self.path)
 
@@ -409,10 +411,7 @@ class Transform:
         self.header = None
         self.data_start = None
         self.read_header()
-        self.dtype = np.dtype([("flip", np.int8), ("angle", np.float64)])
-
-        print(self.header)
-        print(self.som_shape)
+        self.dtype = np.dtype([("flip", np.int8), ("angle", angle_dtype)])
 
         data_shape = (
             self.header[2],
@@ -423,6 +422,7 @@ class Transform:
             self.path,
             dtype=self.dtype,
             order="C",
+            mode="r",
             offset=self.data_start,
             shape=data_shape,
         )
