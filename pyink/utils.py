@@ -290,7 +290,7 @@ class SOM:
             som_shape[1] * som_shape[2] * neuron_shape[2],
         )
 
-        self.data = np.swapaxes(self.data, 1, 2)
+        # self.data = np.swapaxes(self.data, 1, 2)
 
     def read_header(self):
         with open(self.path, "rb") as of:
@@ -345,6 +345,8 @@ class Mapping:
             shape=data_shape,
         )
 
+        # self.data = np.swapaxes(self.data, 1, 2)
+
     def __iter__(self):
         """Produce a key iterating over the image axis
         """
@@ -382,7 +384,11 @@ class Mapping:
             return (*self.header[6], 1)
         return self.header[6]
 
-    def bmu(self, idx=None, squeeze=True, order="C"):
+    @property
+    def srcrange(self):
+        return np.arange(self.data.shape[0])
+
+    def bmu(self, idx=None, squeeze=True):
         """Identify the position of the BMU for each image
         """
         if np.issubdtype(type(idx), np.integer):
@@ -391,7 +397,7 @@ class Mapping:
 
         bmu = np.array(
             np.unravel_index(
-                np.argmin(np.reshape(data, (data.shape[0], -1), order=order), axis=1),
+                np.argmin(np.reshape(data, (data.shape[0], -1), order="C"), axis=1),
                 data.shape[1:],
             )
         )
@@ -403,7 +409,7 @@ class Mapping:
 
 
 class Transform:
-    def __init__(self, path, angle_dtype=np.float32):
+    def __init__(self, path):
         self.path = path
         self.offset = header_offset(self.path)
 
@@ -411,13 +417,14 @@ class Transform:
         self.header = None
         self.data_start = None
         self.read_header()
-        self.dtype = np.dtype([("flip", np.int8), ("angle", angle_dtype)])
+        self.dtype = np.dtype([("flip", np.int8), ("angle", np.float32)])
 
         data_shape = (
             self.header[2],
             self.som_shape[0],
             self.som_shape[1] * self.som_shape[2],  # Get rid of depth
         )
+
         self.data = np.memmap(
             self.path,
             dtype=self.dtype,
@@ -426,6 +433,8 @@ class Transform:
             offset=self.data_start,
             shape=data_shape,
         )
+
+        # self.data = np.swapaxes(self.data, 1, 2)
 
     def __iter__(self):
         """Produce a key iterating over the image axis
@@ -454,16 +463,3 @@ class Transform:
         if self.som_rank == 2:
             return (*self.header[5], 1)
         return self.header[5]
-
-    def bmu(self, idx=None):
-        """Identify the position of the BMU for each image
-        """
-        data = self.data if idx is None else self.data[idx]
-
-        bmu = np.array(
-            np.unravel_index(
-                np.argmin(data.reshape(data.shape[0], -1), axis=1), data.shape[1:]
-            )
-        )
-
-        return bmu.T
