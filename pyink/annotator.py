@@ -1,6 +1,6 @@
 """Classes to assist in the annotation of SOM neurons
 """
-from typing import List, Set, Dict, Tuple, Optional, Union
+from typing import List, Set, Dict, Tuple, Optional, Union, TYPE_CHECKING
 from collections import defaultdict
 import pickle
 import logging
@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import LassoSelector
 from matplotlib.path import Path
 from skimage.segmentation import flood
+
+if TYPE_CHECKING:
+    import matplotlib
 
 import pyink.utils as pu
 
@@ -156,7 +159,7 @@ def make_fig1_callbacks(
 
     neuron = results.neuron
 
-    def fig1_press(event):
+    def fig1_press(event: matplotlib.backend_bases.KeyEvent):
         """Capture the keyboard pressing a button
         
         Arguments:
@@ -164,6 +167,8 @@ def make_fig1_callbacks(
         """
         index = np.argwhere(axes.flat == event.inaxes)[0, 0]
         mask_ax = mask_axes[index]
+
+        logger.debug(f"Event type: {type(event)}")
 
         if event.key == "n":
             logger.info("Moving to next neuron")
@@ -248,7 +253,7 @@ def make_fig1_callbacks(
 
                 fig1.canvas.draw_idle()
 
-    def fig1_button(event: "matplotlib.backend_bases.MouseEvent"):
+    def fig1_button(event: matplotlib.backend_bases.MouseEvent):
         """Capture the mouse button press
         
         Arguments:
@@ -294,6 +299,10 @@ def make_fig1_callbacks(
         Arguments:
             verts {np.ndarray} -- Point data supplied by matplotlib
         """
+        if fig1.canvas.manager.toolbar.mode != "":
+            logger.warn(f"Toolbar mode is {fig1.canvas.manager.toolbar.mode}")
+            return
+
         index = callback.last_index
         neuron = results.neuron[index]
         mask_ax = mask_axes[index]
@@ -401,7 +410,7 @@ class Annotator:
         fig1.canvas.mpl_connect("key_press_event", fig1_key)
         fig1.canvas.mpl_connect("button_press_event", fig1_button)
 
-        lassos = [LassoSelector(ax, lasso_select, button=3) for ax in axes.flat[:-1]]
+        lassos = [LassoSelector(ax, lasso_select, button=3) for ax in axes]
 
         mask_ax = axes.flat[-1]
 
@@ -459,6 +468,7 @@ class Annotator:
             path = f"{self.som.path}.annotations"
 
         with open(path, "wb") as out_file:
+            logger.info(f"Saving to {path}")
             pickle.dump(self.results, out_file)
 
     @classmethod
