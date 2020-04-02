@@ -175,6 +175,11 @@ class SOM:
         self.read_header()
         self.read_data()
 
+    def __str__(self):
+        """Neat string output for the SOM
+        """
+        return self.path
+
     def __iter__(self):
         """Yield the unique coordinates for each neuron
         """

@@ -1,11 +1,9 @@
 """Classes to assist in the annotation of SOM neurons
 """
-from typing import List, Set, Dict, Tuple, Optional
+from typing import List, Set, Dict, Tuple, Optional, Union
 from collections import defaultdict
+import pickle
 import logging
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger()
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,6 +14,8 @@ from skimage.segmentation import flood
 import pyink.utils as pu
 
 marker_style = ["ro", "g*", "yv"]
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger()
 
 
 class Annotation:
@@ -28,7 +28,7 @@ class Annotation:
         Arguments:
             neuron {np.ndarray} -- Image of the neuron of the SOM
         """
-        self.neuron: np.ndarray = None
+        self.neuron: np.ndarray = neuron
         self._init_containters()
 
     def _init_containters(self):
@@ -323,7 +323,7 @@ class Callback:
     def __init__(self):
         self.next_move: str = None
         self.sigma: float = 2
-        self.last_index: int = None
+        self.last_index: int = 0  # Always atleast one axes
         self.live_update: bool = True
         self.currect_axes: int = None
 
@@ -332,19 +332,18 @@ class Annotator:
     """Class to drive the interactive annotation of SOM neurons
     """
 
-    def __init__(self, som: pu.SOM):
+    def __init__(
+        self, som: Union[str, pu.SOM], results: Dict[tuple, Annotation] = None
+    ):
         """Create class instance
         
         Arguments:
             som {pu.SOM} -- SOM to iterate over and annotate
         """
-        if isinstance(som, str):
-            som = pu.SOM(som)
+        self.som = pu.SOM(som) if isinstance(som, str) else som
+        self.results: Dict[tuple, Annotation] = {} if results is None else results
 
-        self.som = som
-        self.results: Dict[tuple, Annotation] = {}
-
-        logger.info("Loaded SOM ...")
+        logger.info(f"Loaded SOM {som}...")
 
     def annotate_neuron(
         self, key: tuple, return_callback: bool = False, cmap: str = "bwr"
@@ -363,12 +362,8 @@ class Annotator:
         """
         neuron = self.som[key]
 
-        if key in self.results.keys():
-            ant = self.results[key]
-        else:
-            ant = Annotation(neuron)
+        ant = self.results[key] if key in self.results.keys() else Annotation(neuron)
 
-        mask = np.zeros_like(neuron[0])  # Neuron should always be (c, x, y)
         no_chans = neuron.shape[0]
 
         fig1_callback = Callback()
@@ -385,10 +380,12 @@ class Annotator:
 
         mask_ax = axes.flat[-1]
 
-        for n, ax in zip(neuron, axes.flat):
+        for i, (n, ax) in enumerate(zip(neuron, axes.flat)):
             ax.imshow(np.sqrt(n), cmap=cmap)
+            overlay_clicks(ant, ax, index=i)
 
-        mask_ax.imshow(mask)
+        mask_ax.imshow(ant.filters[0])
+        overlay_clicks(ant, mask_ax)
 
         plt.show()
 
@@ -422,3 +419,27 @@ class Annotator:
 
             elif callback.next_move == "quit":
                 break
+
+    def save_annotations(self, path: str = None):
+        """Save the Annotator instance as a pickle file
+        
+        Keyword Arguments:
+            path {str} -- Output path to write to (default: {None})
+        """
+        if path is None:
+            path = f"{self.som.path}.annotations"
+
+        with open(path, "wb") as out_file:
+            pickle.dump(self.results, out_file)
+
+    @classmethod
+    def load(cls, som: Union[str, pu.SOM], path: str):
+        """Load a existing pickled Annotator object
+        
+        Arguments:
+            path {str} -- Path to unpickle
+        """
+        with open(path, "rb") as infile:
+            results = pickle.load(infile)
+
+        return cls(som, results=results)
