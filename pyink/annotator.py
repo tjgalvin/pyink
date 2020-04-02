@@ -28,9 +28,19 @@ class Annotation:
         Arguments:
             neuron {np.ndarray} -- Image of the neuron of the SOM
         """
+        self.neuron: np.ndarray = None
+        self._init_containters()
+
+    def _init_containters(self):
+        """Initialise the clicks and filter attributes. This
+        is provided as a self-contained method for widgets
+        """
         self.clicks: Dict[int, list] = defaultdict(list)
-        self.neuron: np.ndarray = neuron
-        self.filters: Dict[int, np.ndarray] = {}
+
+        self.filters: Dict[int, np.ndarray] = {
+            k: np.zeros_like(self.neuron[k]).astype(np.bool)
+            for k in np.arange(self.neuron.shape[0])
+        }
 
 
 # -------------------------------------
@@ -162,12 +172,9 @@ def make_fig1_callbacks(
 
         elif event.key == "c":
             logger.warn("Clearing clicks")
-            results.clicks = defaultdict(list)
-            results.filters = {}
+            results._init_containters()
 
-            mask_im = np.zeros_like(
-                results.neuron[0]
-            )  # Will always be at least 1 neuron
+            mask_im = results.filters[0]  # Will always be at least 1 neuron
 
             mask_ax.clear()  # Clears axes limits
             mask_ax.imshow(mask_im)
@@ -242,15 +249,20 @@ def make_fig1_callbacks(
         Arguments:
             event {matplotlib.backend_bases.Evenet} -- Item for mouse button press
         """
+        logger.debug(f"Event fired: {event}")
+
+        index = np.argwhere(axes.flat == event.inaxes)[0, 0]
+        callback.last_index = index
+
+        if event.button != 1:
+            return
+
         if fig1.canvas.manager.toolbar.mode != "":
             logger.warn(f"Toolbar mode is {fig1.canvas.manager.toolbar.mode}")
             return
 
         if event.xdata != None and event.ydata != None and event.inaxes != mask_ax:
-
-            index = np.argwhere(axes.flat == event.inaxes)[0, 0]
             results.clicks[index].append([event.ydata, event.xdata, callback.sigma])
-            callback.last_index = index
 
             logger.info(f"Click position: {int(event.ydata+0.5), int(event.xdata+0.5)}")
             logger.info(
@@ -269,7 +281,37 @@ def make_fig1_callbacks(
 
         fig1.canvas.draw_idle()
 
-    return fig1_press, fig1_button
+    def lasso_onselect(verts: np.ndarray):
+        """Event handler for the lasso widget
+        
+        Arguments:
+            verts {np.ndarray} -- Point data supplied by matplotlib
+        """
+        index = callback.last_index
+        neuron = results.neuron[index]
+
+        xx, yy = np.meshgrid(np.arange(neuron.shape[0]), np.arange(neuron.shape[1]))
+        pix = np.vstack((xx.flatten(), yy.flatten())).T
+
+        # Select elements in original array bounded by selector path:
+        path = Path(verts)
+        indicies = path.contains_points(pix, radius=1)
+        logger.debug(f"Indicies shape: {indicies.shape}")
+        logger.debug(f"Number of filters: {len(results.filters)}")
+
+        mask = np.zeros_like(results.filters[index])
+
+        logger.debug(f"Mask shape: {mask.shape}")
+        logger.debug(f"Pix shape: {pix.shape}")
+        mask[pix[:, 1], pix[:, 0]] = indicies
+
+        results.filters[index] = mask | results.filters[index]
+
+        mask_ax.imshow(results.filters[index])
+
+        fig1.canvas.draw_idle()
+
+    return fig1_press, fig1_button, lasso_onselect
 
 
 class Callback:
@@ -283,6 +325,7 @@ class Callback:
         self.sigma: float = 2
         self.last_index: int = None
         self.live_update: bool = True
+        self.currect_axes: int = None
 
 
 class Annotator:
@@ -332,9 +375,13 @@ class Annotator:
 
         fig1, axes = plt.subplots(1, no_chans + 1, sharex=True, sharey=True)
 
-        fig1_key, fig1_button = make_fig1_callbacks(fig1_callback, ant, fig1, axes)
+        fig1_key, fig1_button, lasso_select = make_fig1_callbacks(
+            fig1_callback, ant, fig1, axes
+        )
         fig1.canvas.mpl_connect("key_press_event", fig1_key)
         fig1.canvas.mpl_connect("button_press_event", fig1_button)
+
+        lassos = [LassoSelector(ax, lasso_select, button=3) for ax in axes.flat[:-1]]
 
         mask_ax = axes.flat[-1]
 
