@@ -135,7 +135,11 @@ def delete_markers(ax: plt.Axes):
 
 
 def make_fig1_callbacks(
-    callback: "Callback", results: Annotation, fig1: plt.Figure, axes: plt.Axes,
+    callback: "Callback",
+    results: Annotation,
+    fig1: plt.Figure,
+    axes: Union[plt.Axes, np.ndarray],
+    mask_axes: Union[plt.Axes, np.ndarray],
 ):
     """Create the function handlers to pass over to the plt backends
     
@@ -143,13 +147,13 @@ def make_fig1_callbacks(
         callback {Callback} -- Class to have hard references for communication between backend and code
         results {Annotation} -- Store annotationg information for each of the neurons
         fig1 {plt.Figure} -- Instance to plt figure to plot to
-        axes {plt.Axes} -- List of active axes objectd on figure. The last is taken to be the mask
+        axes {plt.Axes} -- List of active axes objectd on figure. 
+        mask_axes {plt.Axes} -- List of active axes objectd on figure for the masks
 
     Returns:
         callables -- Return the functions to handle figure key press and button press events
     """
 
-    mask_ax = axes.flat[-1]
     neuron = results.neuron
 
     def fig1_press(event):
@@ -159,6 +163,7 @@ def make_fig1_callbacks(
             event {matplotlib.backend_bases.KeyEvent} -- Keyboard item pressed
         """
         index = np.argwhere(axes.flat == event.inaxes)[0, 0]
+        mask_ax = mask_axes[index]
 
         if event.key == "n":
             logger.info("Moving to next neuron")
@@ -243,15 +248,17 @@ def make_fig1_callbacks(
 
                 fig1.canvas.draw_idle()
 
-    def fig1_button(event):
+    def fig1_button(event: "matplotlib.backend_bases.MouseEvent"):
         """Capture the mouse button press
         
         Arguments:
             event {matplotlib.backend_bases.Evenet} -- Item for mouse button press
         """
         logger.debug(f"Event fired: {event}")
+        logger.debug(f"Event type: {type(event)}")
 
         index = np.argwhere(axes.flat == event.inaxes)[0, 0]
+        mask_ax = mask_axes[index]
         callback.last_index = index
 
         if event.button != 1:
@@ -289,6 +296,7 @@ def make_fig1_callbacks(
         """
         index = callback.last_index
         neuron = results.neuron[index]
+        mask_ax = mask_axes[index]
 
         xx, yy = np.meshgrid(np.arange(neuron.shape[0]), np.arange(neuron.shape[1]))
         pix = np.vstack((xx.flatten(), yy.flatten())).T
@@ -368,10 +376,12 @@ class Annotator:
 
         fig1_callback = Callback()
 
-        fig1, axes = plt.subplots(1, no_chans + 1, sharex=True, sharey=True)
+        fig1, (axes, mask_axes) = plt.subplots(
+            2, no_chans, sharex=True, sharey=True, squeeze=False
+        )
 
         fig1_key, fig1_button, lasso_select = make_fig1_callbacks(
-            fig1_callback, ant, fig1, axes
+            fig1_callback, ant, fig1, axes, mask_axes
         )
         fig1.canvas.mpl_connect("key_press_event", fig1_key)
         fig1.canvas.mpl_connect("button_press_event", fig1_button)
@@ -384,8 +394,9 @@ class Annotator:
             ax.imshow(np.sqrt(n), cmap=cmap)
             overlay_clicks(ant, ax, index=i)
 
-        mask_ax.imshow(ant.filters[0])
-        overlay_clicks(ant, mask_ax)
+        for i, mask_ax in enumerate(mask_axes):
+            mask_ax.imshow(ant.filters[i])
+            overlay_clicks(ant, mask_ax, index=i)
 
         plt.show()
 
