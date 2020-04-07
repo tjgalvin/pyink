@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 import pyink.utils as pu
 
 marker_style = ["ro", "g*", "yv"]
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
@@ -44,6 +44,33 @@ class Annotation:
             k: np.zeros_like(self.neuron[k]).astype(np.bool)
             for k in np.arange(self.neuron.shape[0])
         }
+
+    def evaluate_points(self, data: np.ndarray, index: int) -> np.ndarray:
+        """Evaluate whether a set of data points fall withing a filter
+        
+        Arguments:
+            data {np.ndarray} -- Transformed data points
+            index {int} -- Index of filter to compare
+        
+        Returns:
+            np.ndarray -- Boolean array of whether data points fall within a region
+        """
+        pass
+
+    def transform_evaluate_points(
+        self, data: np.ndarray, transform: Tuple[int, float], index: int
+    ) -> np.ndarray:
+        """Transform a set of datapoints and evaluate whether they fall within a filter
+        
+        Arguments:
+            data {np.ndarray} -- data points representing sources in a pixel frame of reference
+            transform {tuple[int, float]} -- transformation to apply to datapoints
+            index {int} -- index of the filter to compare
+        
+        Returns:
+            np.ndarray -- Boolean array of whether data points fall within a region
+        """
+        pass
 
 
 # -------------------------------------
