@@ -577,11 +577,13 @@ class CoordinateTransformer:
 
         self.coords: Dict[str, np.ndarray] = {}
         self.coords["sky"] = sky_coords
-        self.coords["offsets-sky"] = self.__spherical_offsets()
+        self.coords["offsets-angular"] = self.__spherical_offsets()
+
+        # TODO: Transform the angular offsets before they become pixel offsets
 
         if self.pixel_scale is not None:
             self.coords["offsets-pixel"] = self.__delta_sky_to_pixels()
-            self.coords["neuron"] = self.__spatial_transform_points()
+            self.coords["offsets-neuron"] = self.__spatial_transform_points()
 
     def __spherical_offsets(self) -> Tuple[np.ndarray, np.ndarray]:
         """Calculate the spherical offsets between the centre point and
@@ -603,6 +605,8 @@ class CoordinateTransformer:
         Returns:
             Tuple[np.ndarray, np.ndarray] -- Coordinates in a pixel-reference frame
         """
+        offsets = self.coords["offsets-angular"]
+
         if self.pixel_scale is None:
             return offsets
 
@@ -611,7 +615,7 @@ class CoordinateTransformer:
             if isinstance(self.pixel_scale, tuple)
             else (self.pixel_scale, self.pixel_scale)
         )
-        pixel_scale = (u.pixel_scale(ps / u.pixel) for ps in pixel_scale)
+        pixel_scale = [u.pixel_scale(ps / u.pixel) for ps in pixel_scale]
 
         # RA increases right-to-left. The opposite of an array
         offsets = (
