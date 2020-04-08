@@ -177,6 +177,13 @@ class ImageReader:
 
 
 class SOM:
+    """A wrapper around the SOM binary files produced by PINK. Only supports 
+    Cartesian SOM lattice layouts at the moment. For SOMs trained in three-dimensions
+    the class will reshape the structure to be (X, YZ) as a matter of convenience. 
+    
+    TODO: Build in support for the Hexagonal SOM lattice layout
+    """
+
     def __init__(self, path):
         self.path = path
         self.offset = header_offset(self.path)
@@ -339,7 +346,9 @@ class SOM:
 
 
 class Mapping:
-    """Wrapper around a PINK Map binary file. Includes some helper functions
+    """Wrapper around a PINK Map binary file. Includes some helper functions. Note that
+    this only works for Cartesian SOM lattice layouts. For SOMs trained in three-dimensions
+    the class will reshape the structure to be (X, YZ) as a matter of convenience. 
     """
 
     def __init__(self, path: str):
@@ -432,7 +441,13 @@ class Mapping:
         """
         return np.arange(self.data.shape[0]).astype(np.int)
 
-    def bmu(self, idx=None, squeeze=True) -> np.ndarray:
+    def bmu(
+        self,
+        idx=None,
+        squeeze=True,
+        return_idx: bool = False,
+        return_tuples: bool = False,
+    ) -> np.ndarray:
         """Return the BMU coordinate for each source image. This corresponds to
         the coordinate of the neuron on the SOM lattice with the smalled ED to
         a source image
@@ -440,12 +455,15 @@ class Mapping:
         Keyword Arguments:
             idx {Union[int,np.ndarray[int]]} -- The index / indicies to look at. Will default return all (default: {None})
             squeeze {bool} -- Remove empty axes from the return np.ndarray (default: {True})
-        
+            return_idx {bool} -- Include the source index/indices as part of the returned structure (default: {True})
+            return_tuples {bool} -- Return as a list of tuples (default: {False})
+
         Returns:
             np.ndarray -- Indices to the BMU on the SOM lattice of each source image
         """
         if np.issubdtype(type(idx), np.integer):
-            idx = [idx]
+            idx = np.array([idx])
+
         data = self.data if idx is None else self.data[idx]
 
         bmu = np.array(
@@ -453,12 +471,18 @@ class Mapping:
                 np.argmin(np.reshape(data, (data.shape[0], -1), order="C"), axis=1),
                 data.shape[1:],
             )
-        )
+        ).T
 
-        if squeeze:
-            return np.squeeze(bmu.T)
-        else:
-            return bmu.T
+        if return_idx:
+            idx = self.srcrange if idx is None else idx
+            bmu = np.column_stack((idx, bmu))
+
+        bmu = np.squeeze(bmu) if squeeze else bmu
+
+        if return_tuples:
+            bmu = [tuple(i) for i in bmu]
+
+        return bmu
 
 
 class Transform:
@@ -568,7 +592,7 @@ class CoordinateTransformer:
             relative to the center_coord. If self.pixel_scale is None or `apply_pixel_scale`
             is False thet are returned as Angles, otherwise return in a pixel refernce frame
         """
-        return self.center_coord.spherical_offsets_to(self.transform_coords)
+        return self.center_coord.spherical_offsets_to(self.coords["sky"])
 
     def __delta_sky_to_pixels(self) -> Tuple[np.ndarray, np.ndarray]:
         """Transform the spherical offsets from the sky-reference frame to a
