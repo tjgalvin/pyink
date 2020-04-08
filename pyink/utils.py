@@ -93,7 +93,7 @@ def header_offset(path):
     of a PINK binary. The header format spec: lines with a '#' start are
     ignored until a '# END OF HEADER' is found. Only valid at beginning of
     file and 
-    
+
     Arguments:
         path {str} -- Path to the pink binary file
     """
@@ -108,6 +108,9 @@ def header_offset(path):
 def resolve_data_type(dtype):
     """Stub function to act as a lookup for the datatypes within binaries
     
+    TODO: Expand this to be loaded as the appropriate datatypes in the binary classes
+    TODO: Produce the reverse so the ImageWriter acts appropriately
+
     Arguments:
         header {tuple} -- Pink file header
     """
@@ -336,7 +339,18 @@ class SOM:
 
 
 class Mapping:
-    def __init__(self, path):
+    """Wrapper around a PINK Map binary file. Includes some helper functions
+    """
+
+    def __init__(self, path: str):
+        """Create a new instance to manage a PINK mapping binary file. Currently
+        only works for the Cartesian layout scheme.
+
+        TODO: Expand to handle the hexagonal SOM lattice scheme
+        
+        Arguments:
+            path {str} -- Path to the PINK mapping binary file
+        """
         self.path = path
         self.offset = header_offset(self.path)
 
@@ -359,15 +373,15 @@ class Mapping:
             shape=data_shape,
         )
 
-        # self.data = np.swapaxes(self.data, 1, 2)
-
     def __iter__(self):
-        """Produce a key iterating over the image axis
+        """Produce a index iterating over the input image axis
         """
         for i in range(self.header[3]):
             yield i
 
-    def read_header(self):
+    def read_header(self) -> None:
+        """Process the initial header information of the Mapping binary file
+        """
         with open(self.path, "rb") as of:
             of.seek(self.offset)
 
@@ -389,21 +403,46 @@ class Mapping:
             self.dtype = resolve_data_type(dtype)
 
     @property
-    def som_rank(self):
+    def som_rank(self) -> int:
+        """The number of dimensions of the SOM lattice
+        
+        Returns:
+            int -- the number of dimensions to the SOM lattice
+        """
         return self.header[5]
 
     @property
-    def som_shape(self):
+    def som_shape(self) -> Tuple:
+        """Return the structure of the SOM. This will pad it out to a
+        three-element tuple if required. 
+        
+        Returns:
+            tuple -- A three-element tuple describing the SOM lattice structure
+        """
         if self.som_rank == 2:
             return (*self.header[6], 1)
         return self.header[6]
 
     @property
-    def srcrange(self):
-        return np.arange(self.data.shape[0])
+    def srcrange(self) -> np.ndarray:
+        """Creates an array of indices corresponding to the source image axis
+        
+        Returns:
+            np.ndarray[int] -- Indicies to access the source images
+        """
+        return np.arange(self.data.shape[0]).astype(np.int)
 
-    def bmu(self, idx=None, squeeze=True):
-        """Identify the position of the BMU for each image
+    def bmu(self, idx=None, squeeze=True) -> np.ndarray:
+        """Return the BMU coordinate for each source image. This corresponds to
+        the coordinate of the neuron on the SOM lattice with the smalled ED to
+        a source image
+        
+        Keyword Arguments:
+            idx {Union[int,np.ndarray[int]]} -- The index / indicies to look at. Will default return all (default: {None})
+            squeeze {bool} -- Remove empty axes from the return np.ndarray (default: {True})
+        
+        Returns:
+            np.ndarray -- Indices to the BMU on the SOM lattice of each source image
         """
         if np.issubdtype(type(idx), np.integer):
             idx = [idx]
