@@ -6,13 +6,11 @@ import pickle
 import logging
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.widgets import LassoSelector
 from matplotlib.path import Path
 from skimage.segmentation import flood
-
-if TYPE_CHECKING:
-    import matplotlib
 
 import pyink.utils as pu
 
