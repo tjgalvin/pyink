@@ -8,20 +8,27 @@ import logging
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.widgets import LassoSelector
+from matplotlib.widgets import LassoSelector, CheckButtons, TextBox
 from matplotlib.path import Path
 from skimage.segmentation import flood
 
 import pyink.utils as pu
 
 marker_style = ["ro", "g*", "yv"]
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+
+# logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("annotation")
+# logger.setLevel(logging.DEBUG)
 
 
 class Annotation:
     """Class to retain annotation information applied on neurons
     """
+
+    # labels: List[Tuple[str, int]] = []
+    labels: List[Tuple[str, int]] = [
+        (j, i) for i, j in enumerate("Tim was here".split())
+    ]
 
     def __init__(self, neuron: np.ndarray):
         """Create an annotation instance to manage neurion
@@ -168,6 +175,7 @@ def make_fig1_callbacks(
     fig1: plt.Figure,
     axes: Union[plt.Axes, np.ndarray],
     mask_axes: Union[plt.Axes, np.ndarray],
+    button_axes: Union[None, np.ndarray] = None,
 ):
     """Create the function handlers to pass over to the plt backends
     
@@ -177,10 +185,13 @@ def make_fig1_callbacks(
         fig1 {plt.Figure} -- Instance to plt figure to plot to
         axes {plt.Axes} -- List of active axes objectd on figure. 
         mask_axes {plt.Axes} -- List of active axes objectd on figure for the masks
+        button_axes {Union[None, np.ndarray]} -- If labeling is enabled, this will be the checkbox and textbox axes. None otherwise (default: {None})
 
     Returns:
         callables -- Return the functions to handle figure key press and button press events
     """
+    if button_axes is not None:
+        logger.debug(f"button_axes is not empty.")
 
     neuron = results.neuron
 
@@ -190,10 +201,12 @@ def make_fig1_callbacks(
         Arguments:
             event {matplotlib.backend_bases.KeyEvent} -- Keyboard item pressed
         """
+        if button_axes is not None and event.inaxes in button_axes:
+            logger.debug("Key press captured in button_axes. Discarding. ")
+            return
+
         index = np.argwhere(axes.flat == event.inaxes)[0, 0]
         mask_ax = mask_axes[index]
-
-        logger.debug(f"Event type: {type(event)}")
 
         if event.key == "n":
             logger.info("Moving to next neuron")
@@ -248,12 +261,6 @@ def make_fig1_callbacks(
             callback.live_update = not callback.live_update
             logger.info(f"Live update set to {callback.live_update}")
 
-        elif event.key in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
-            results.type = event.key
-
-            fig1.suptitle(f"{results.key} - Label: {results.type}")
-            fig1.canvas.draw_idle()
-
         elif event.key == "down":
             callback.sigma = callback.sigma - 0.5
             logger.info(f"Sigma moved to {callback.sigma}")
@@ -284,10 +291,19 @@ def make_fig1_callbacks(
         Arguments:
             event {matplotlib.backend_bases.Evenet} -- Item for mouse button press
         """
-        logger.debug(f"Event fired: {event}")
-        logger.debug(f"Event type: {type(event)}")
+
+        if not event.inaxes in axes[:-1]:
+            logger.debug(
+                f"Click captured but not in image neuron subplot. Discarding. "
+            )
+            return
 
         index = np.argwhere(axes.flat == event.inaxes)[0, 0]
+        logger.debug(f"Click Index is {index}, {type(index)}")
+        if button_axes is not None and axes[index] in button_axes:
+            logger.debug(f"Click event in CheckBox or TextBox axes")
+            return
+
         mask_ax = mask_axes[index]
         callback.last_index = index
 
@@ -403,7 +419,11 @@ class Annotator:
             self.save = save
 
     def annotate_neuron(
-        self, key: tuple, return_callback: bool = False, cmap: str = "bwr"
+        self,
+        key: tuple,
+        return_callback: bool = False,
+        cmap: str = "bwr",
+        labeling: bool = False,
     ):
         """Perform the annotation for a specified neuron
         
@@ -413,11 +433,13 @@ class Annotator:
         Keyword Arguments:
             return_callback {bool} -- return matplotlib action information (default: {False})
             cmap {str} -- colour map style (default: {'bwr'})
-        
+            labeling {bool} -- enabling the interactive creation and assignment of labels (default: {False})
+
         Returns:
             [Callback, Annotation] -- matplotlib action information, neuron annotation
         """
         neuron = self.som[key]
+        logger.debug(f"Loaded {key} neuron, of shape {neuron.shape}")
 
         ant = self.results[key] if key in self.results.keys() else Annotation(neuron)
 
@@ -425,25 +447,44 @@ class Annotator:
 
         fig1_callback = Callback()
 
+        no_label = 1 if labeling else 0
+
         fig1, (axes, mask_axes) = plt.subplots(
-            2, no_chans, sharex=True, sharey=True, squeeze=False
+            2, no_chans + no_label, sharex=False, sharey=False, squeeze=False
         )
 
+        ax_base = axes[0]
+        ax_base.get_shared_x_axes().join(*axes[:-1], *mask_axes[:-1])
+        ax_base.get_shared_y_axes().join(*axes[:-1], *mask_axes[:-1])
+
+        logger.debug(f"Axes shape: {axes.shape}")
+        logger.debug(f"Mask_axes shape: {mask_axes.shape}")
+
+        button_axes = None
+        if labeling:
+            button_axes = np.array((axes[-1], mask_axes[-1]))
+            logger.debug(f"Creating button_axes.")
+            checkbox = CheckButtons(button_axes[0], [l[0] for l in ant.labels])
+            textbox = TextBox(button_axes[1], "")
+
         fig1_key, fig1_button, lasso_select = make_fig1_callbacks(
-            fig1_callback, ant, fig1, axes, mask_axes
+            fig1_callback, ant, fig1, axes, mask_axes, button_axes=button_axes
         )
         fig1.canvas.mpl_connect("key_press_event", fig1_key)
         fig1.canvas.mpl_connect("button_press_event", fig1_button)
 
         lassos = [LassoSelector(ax, lasso_select, button=3) for ax in axes]
 
-        mask_ax = axes.flat[-1]
-
         for i, (n, ax) in enumerate(zip(neuron, axes.flat)):
+            logger.debug(f"Loading neuron image channel {i+1} of {neuron.shape[0]}")
             ax.imshow(np.sqrt(n), cmap=cmap)
             overlay_clicks(ant, ax, index=i)
 
-        for i, mask_ax in enumerate(mask_axes):
+        for i, _ in enumerate(ant.filters.keys()):
+            logger.debug(
+                f"Loading neuron filter channel {i+1} of {len(ant.filters.keys())}"
+            )
+            mask_ax = mask_axes[i]
             mask_ax.imshow(ant.filters[i])
             overlay_clicks(ant, mask_ax, index=i)
 
@@ -464,7 +505,9 @@ class Annotator:
         while idx < len(neurons):
 
             key: tuple = neurons[idx]
-            callback, ant = self.annotate_neuron(key, return_callback=True)
+            callback, ant = self.annotate_neuron(
+                key, return_callback=True, labeling=True
+            )
 
             if self.save is not None:
                 self.save_annotations(path=self.save)
