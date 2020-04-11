@@ -292,7 +292,13 @@ def make_fig1_callbacks(
             event {matplotlib.backend_bases.Evenet} -- Item for mouse button press
         """
 
-        index = np.squeeze(np.argwhere(axes.flat == event.inaxes))[0]
+        if not event.inaxes in axes[:-1]:
+            logger.debug(
+                f"Click captured but not in image neuron subplot. Discarding. "
+            )
+            return
+
+        index = np.argwhere(axes.flat == event.inaxes)[0, 0]
         logger.debug(f"Click Index is {index}, {type(index)}")
         if button_axes is not None and axes[index] in button_axes:
             logger.debug(f"Click event in CheckBox or TextBox axes")
@@ -443,9 +449,15 @@ class Annotator:
 
         no_label = 1 if labeling else 0
 
+        # The sharex and sharey are probably not interating well with the
+        # checkboxes
         fig1, (axes, mask_axes) = plt.subplots(
-            2, no_chans + no_label, sharex=True, sharey=True, squeeze=False
+            2, no_chans + no_label, sharex=False, sharey=False, squeeze=False
         )
+
+        # ax_base = axes[0]
+        # ax_base.get_shared_x_axis().join(axes[:-1], mask_axes[:-1])
+        # ax_base.get_shared_y_axis().join(axes[:-1], mask_axes[:-1])
 
         logger.debug(f"Axes shape: {axes.shape}")
         logger.debug(f"Mask_axes shape: {mask_axes.shape}")
