@@ -1,6 +1,6 @@
 """Classes to assist in the annotation of SOM neurons
 """
-from typing import List, Set, Dict, Tuple, Optional, Union, TYPE_CHECKING
+from typing import List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
 from collections import defaultdict
 import pickle
 import logging
@@ -25,10 +25,7 @@ class Annotation:
     """Class to retain annotation information applied on neurons
     """
 
-    # labels: List[Tuple[str, int]] = []
-    labels: List[Tuple[str, int]] = [
-        (j, i) for i, j in enumerate("Tim was here".split())
-    ]
+    labels: List[Tuple[str, int]] = []
 
     def __init__(self, neuron: np.ndarray):
         """Create an annotation instance to manage neurion
@@ -368,6 +365,51 @@ def make_fig1_callbacks(
     return fig1_press, fig1_button, lasso_onselect
 
 
+def make_box_callbacks(
+    callback: "Callback",
+    results: Annotation,
+    fig1: plt.Figure,
+    button_axes: Tuple[plt.Axes, plt.Axes],
+) -> Callable:
+    """Make the callbacks that will be provided to the checkbox and textbox
+    
+    Arguments:
+        callback {Callback} -- Handler to manage communication between matplotlib and widgets
+        results {Annotation} -- Neuron annotation structure
+        fig1 {plt.Figure} -- figure canvas
+        button_axes {Tuple[plt.Axes, plt.Axes]} -- References to the button axes
+        checkbox {matplotlib.widgets.CheckButtons} -- checkbox widget return by matplotlib
+        checkbox {matplotlib.widgets.TextBox} -- textbox widget return by matplotlib
+
+    Returns:
+        Tuple[Callable] -- callback functions for checkbox and textbox widgets
+    """
+
+    def textbox_submit(text: str):
+        """Action for when new label is added
+        
+        Arguments:
+            text {str} -- New label entered by user
+        """
+        logger.debug(f"TextBox submit event captured. Submitted text {text}")
+        if text == "":
+            logger.warn(f"Textbox submission is empty. Ignoring. ")
+            return
+        if text in [l[0] for l in results.labels]:
+            logger.warn(f"{text} already added as a label. Ignoring. ")
+            return
+
+        results.labels.append((text, len(results.labels)))
+        callback.textbox.text = ""
+
+        callback.checkbox.ax.clear()
+        callback.checkbox = CheckButtons(button_axes[0], [l[0] for l in results.labels])
+
+        fig1.canvas.draw_idle()
+
+    return textbox_submit
+
+
 class Callback:
     """Helper class to retain items from the matplotlib callbacks. Only a 
     weak reference is retained, so is modified to create a new copy (say an int)
@@ -380,6 +422,8 @@ class Callback:
         self.last_index: int = 0  # Always atleast one axes
         self.live_update: bool = True
         self.currect_axes: int = None
+        self.checkbox: Union[matplotlib.widgets.CheckButtons] = None
+        self.textbox: Union[matplotlib.widgets.TextBox] = None
 
 
 class Annotator:
@@ -461,8 +505,13 @@ class Annotator:
         if labeling:
             button_axes = np.array((axes[-1], mask_axes[-1]))
             logger.debug(f"Creating button_axes.")
-            checkbox = CheckButtons(button_axes[0], [l[0] for l in ant.labels])
-            textbox = TextBox(button_axes[1], "")
+            fig1_callback.checkbox = CheckButtons(
+                button_axes[0], [l[0] for l in ant.labels]
+            )
+            fig1_callback.textbox = TextBox(button_axes[1], "")
+
+            textbox_submit = make_box_callbacks(fig1_callback, ant, fig1, button_axes,)
+            fig1_callback.textbox.on_submit(textbox_submit)
 
         fig1_key, fig1_button, lasso_select = make_fig1_callbacks(
             fig1_callback, ant, fig1, axes, mask_axes, button_axes=button_axes
