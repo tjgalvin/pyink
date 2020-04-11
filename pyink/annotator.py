@@ -328,10 +328,6 @@ def make_fig1_callbacks(
             mask_ax.imshow(img_mask)
             overlay_clicks(results, mask_ax)
 
-            for ax in axes.flat:
-                if ax != mask_ax:
-                    ax.plot(event.xdata, event.ydata, "go", ms=12)
-
         fig1.canvas.draw_idle()
 
     def lasso_onselect(verts: np.ndarray):
@@ -453,9 +449,10 @@ class Annotator:
             2, no_chans + no_label, sharex=False, sharey=False, squeeze=False
         )
 
+        # Manually link the axes
         ax_base = axes[0]
-        ax_base.get_shared_x_axes().join(*axes[:-1], *mask_axes[:-1])
-        ax_base.get_shared_y_axes().join(*axes[:-1], *mask_axes[:-1])
+        ax_base.get_shared_x_axes().join(*axes[:-no_label], *mask_axes[:-no_label])
+        ax_base.get_shared_y_axes().join(*axes[:-no_label], *mask_axes[:-no_label])
 
         logger.debug(f"Axes shape: {axes.shape}")
         logger.debug(f"Mask_axes shape: {mask_axes.shape}")
