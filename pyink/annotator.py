@@ -190,6 +190,8 @@ def make_fig1_callbacks(
     Returns:
         callables -- Return the functions to handle figure key press and button press events
     """
+    if button_axes is not None:
+        logger.debug(f"button_axes is not empty.")
 
     neuron = results.neuron
 
@@ -199,6 +201,10 @@ def make_fig1_callbacks(
         Arguments:
             event {matplotlib.backend_bases.KeyEvent} -- Keyboard item pressed
         """
+        if button_axes is not None and event.inaxes in button_axes:
+            logger.debug("Key press captured in button_axes. Discarding. ")
+            return
+
         index = np.argwhere(axes.flat == event.inaxes)[0, 0]
         mask_ax = mask_axes[index]
 
@@ -254,12 +260,6 @@ def make_fig1_callbacks(
         elif event.key == "u":
             callback.live_update = not callback.live_update
             logger.info(f"Live update set to {callback.live_update}")
-
-        elif event.key in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
-            results.type = event.key
-
-            fig1.suptitle(f"{results.key} - Label: {results.type}")
-            fig1.canvas.draw_idle()
 
         elif event.key == "down":
             callback.sigma = callback.sigma - 0.5
@@ -449,25 +449,23 @@ class Annotator:
 
         no_label = 1 if labeling else 0
 
-        # The sharex and sharey are probably not interating well with the
-        # checkboxes
         fig1, (axes, mask_axes) = plt.subplots(
             2, no_chans + no_label, sharex=False, sharey=False, squeeze=False
         )
 
-        # ax_base = axes[0]
-        # ax_base.get_shared_x_axis().join(axes[:-1], mask_axes[:-1])
-        # ax_base.get_shared_y_axis().join(axes[:-1], mask_axes[:-1])
+        ax_base = axes[0]
+        ax_base.get_shared_x_axes().join(*axes[:-1], *mask_axes[:-1])
+        ax_base.get_shared_y_axes().join(*axes[:-1], *mask_axes[:-1])
 
         logger.debug(f"Axes shape: {axes.shape}")
         logger.debug(f"Mask_axes shape: {mask_axes.shape}")
 
         button_axes = None
         if labeling:
-            buttons_axes = np.array((axes[-1], mask_axes[-1]))
-            logger.debug(f"Buttons_axes shape: {buttons_axes.shape}")
-            checkbox = CheckButtons(buttons_axes[0], [l[0] for l in ant.labels])
-            textbox = TextBox(buttons_axes[1], "")
+            button_axes = np.array((axes[-1], mask_axes[-1]))
+            logger.debug(f"Creating button_axes.")
+            checkbox = CheckButtons(button_axes[0], [l[0] for l in ant.labels])
+            textbox = TextBox(button_axes[1], "")
 
         fig1_key, fig1_button, lasso_select = make_fig1_callbacks(
             fig1_callback, ant, fig1, axes, mask_axes, button_axes=button_axes
