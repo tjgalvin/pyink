@@ -202,7 +202,14 @@ def make_fig1_callbacks(
             logger.debug("Key press captured in button_axes. Discarding. ")
             return
 
-        index = np.argwhere(axes.flat == event.inaxes)[0, 0]
+        if event.inaxes in axes:
+            index = np.argwhere(axes.flat == event.inaxes)[0, 0]
+        elif event.inaxes in mask_axes:
+            index = np.argwhere(mask_axes.flat == event.inaxes)[0, 0]
+        else:
+            logger.debug("Event not in a meaningful axes window. ")
+            return
+
         mask_ax = mask_axes[index]
 
         if event.key == "n":
@@ -370,7 +377,7 @@ def make_box_callbacks(
     results: Annotation,
     fig1: plt.Figure,
     button_axes: Tuple[plt.Axes, plt.Axes],
-) -> Callable:
+) -> Tuple[Callable, Callable]:
     """Make the callbacks that will be provided to the checkbox and textbox
     
     Arguments:
@@ -382,7 +389,7 @@ def make_box_callbacks(
         checkbox {matplotlib.widgets.TextBox} -- textbox widget return by matplotlib
 
     Returns:
-        Tuple[Callable] -- callback functions for checkbox and textbox widgets
+        Tuple[Callable, Callable] -- callback functions for checkbox and textbox widgets
     """
 
     def textbox_submit(text: str):
@@ -403,11 +410,26 @@ def make_box_callbacks(
         callback.textbox.text = ""
 
         callback.checkbox.ax.clear()
-        callback.checkbox = CheckButtons(button_axes[0], [l[0] for l in results.labels])
+        callback.checkbox = CheckButtons(
+            callback.checkbox.ax, [l[0] for l in results.labels]
+        )
+        callback.checkbox.on_clicked(checkbox_activations)
+
+        callback.textbox.ax.clear()
+        callback.textbox = TextBox(callback.textbox.ax, "")
 
         fig1.canvas.draw_idle()
 
-    return textbox_submit
+    def checkbox_activations(label: str):
+        """Callback function for when a label is selected
+        
+        Arguments:
+            label {str} -- The label selected by user
+        """
+        logger.debug(f"Checkbox label has been clicked, {label}")
+        callback.checkbox_activate = callback.checkbox.get_status()
+
+    return textbox_submit, checkbox_activations
 
 
 class Callback:
@@ -415,6 +437,11 @@ class Callback:
     weak reference is retained, so is modified to create a new copy (say an int)
     the reference is lost/garbage collected once matplotlib finishes
     """
+
+    # TODO: Consider making checkbox activations persistent between neurons somhow
+    # TODO: Suspect will have to pass around get_status type messages?
+    checkbox: Union[matplotlib.widgets.CheckButtons] = None
+    textbox: Union[matplotlib.widgets.TextBox] = None
 
     def __init__(self):
         self.next_move: str = None
@@ -506,12 +533,15 @@ class Annotator:
             button_axes = np.array((axes[-1], mask_axes[-1]))
             logger.debug(f"Creating button_axes.")
             fig1_callback.checkbox = CheckButtons(
-                button_axes[0], [l[0] for l in ant.labels]
+                button_axes[0], [l[0] for l in ant.labels], None
             )
             fig1_callback.textbox = TextBox(button_axes[1], "")
 
-            textbox_submit = make_box_callbacks(fig1_callback, ant, fig1, button_axes,)
+            textbox_submit, checkbox_change = make_box_callbacks(
+                fig1_callback, ant, fig1, button_axes,
+            )
             fig1_callback.textbox.on_submit(textbox_submit)
+            fig1_callback.checkbox.on_clicked(checkbox_change)
 
         fig1_key, fig1_button, lasso_select = make_fig1_callbacks(
             fig1_callback, ant, fig1, axes, mask_axes, button_axes=button_axes
@@ -519,7 +549,7 @@ class Annotator:
         fig1.canvas.mpl_connect("key_press_event", fig1_key)
         fig1.canvas.mpl_connect("button_press_event", fig1_button)
 
-        lassos = [LassoSelector(ax, lasso_select, button=3) for ax in axes]
+        lassos = [LassoSelector(ax, lasso_select, button=3) for ax in axes[:-no_label]]
 
         for i, (n, ax) in enumerate(zip(neuron, axes.flat)):
             logger.debug(f"Loading neuron image channel {i+1} of {neuron.shape[0]}")
