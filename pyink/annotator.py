@@ -20,6 +20,29 @@ marker_style = ["ro", "g*", "yv"]
 logger = logging.getLogger("annotation")
 # logger.setLevel(logging.DEBUG)
 
+PRIMES = {
+    0: 2,
+    1: 3,
+    2: 5,
+    3: 7,
+    4: 11,
+    5: 13,
+    6: 17,
+    7: 19,
+    8: 23,
+    9: 29,
+    10: 31,
+    11: 37,
+    12: 41,
+    13: 43,
+    14: 47,
+    15: 53,
+    16: 59,
+    17: 61,
+    18: 67,
+    19: 71,
+}
+
 
 class Annotation:
     """Class to retain annotation information applied on neurons
@@ -405,8 +428,13 @@ def make_box_callbacks(
         if text in [l[0] for l in results.labels]:
             logger.warn(f"{text} already added as a label. Ignoring. ")
             return
+        if len(PRIMES.keys()) == len(results.labels):
+            logger.info(
+                f"There are already {len(results.labels)}. Not adding any more. "
+            )
+            return
 
-        results.labels.append((text, len(results.labels)))
+        results.labels.append((text, PRIMES[len(results.labels)]))
         callback.textbox.text = ""
 
         callback.checkbox.ax.clear()
