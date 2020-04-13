@@ -426,13 +426,13 @@ def make_fig1_callbacks(
         logger.debug(f"Indicies shape: {indicies.shape}")
         logger.debug(f"Number of filters: {len(results.filters)}")
 
-        mask = np.zeros_like(results.filters[index])
+        mask = results.filters[index]
 
         logger.debug(f"Mask shape: {mask.shape}")
         logger.debug(f"Pix shape: {pix.shape}")
-        mask[pix[:, 1], pix[:, 0]] = indicies
+        mask[pix[indicies, 1], pix[indicies, 0]] = calculate_region_value(callback)
 
-        results.filters[index] = mask | results.filters[index]
+        results.filters[index] = mask
 
         mask_ax.imshow(results.filters[index])
 
