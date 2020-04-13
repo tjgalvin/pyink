@@ -61,7 +61,7 @@ class Annotation:
 
     def _init_containters(self):
         """Initialise the clicks and filter attributes. This
-        is provided as a self-contained method for widgets
+        is provided as a self-contained method for widgets to call
         """
         self.clicks: Dict[int, list] = defaultdict(list)
 
@@ -119,6 +119,39 @@ def overlay_clicks(results: Annotation, ax: plt.Axes, index: int = None):
             ax.plot(p[1], p[0], marker, ms=12)
 
 
+def calculate_region_value(callback: "Callback") -> int:
+    """Given a set of checkboxes and their activation state, calculate a unique
+    value to store in the filter pixels
+    
+    Arguments:
+        callback {Callback} -- Structure to communicate with the matplotlib backend
+    
+    Returns:
+        int -- Unique value to store as region. If no checkboxes axes of checkboxes activate return 1. 
+    """
+    if callback.checkbox is None:
+        logger.debug(f"No checkbox axes detected. Returning default vaue of 1. ")
+        return 1
+
+    logger.debug(f"Checkbox.get_status(): {callback.checkbox.get_status()}")
+
+    states = [
+        PRIMES[i]
+        for i, state in enumerate(callback.checkbox.get_status())
+        if state == True
+    ]
+
+    logger.debug(f"Number of active boxes {len(states)}")
+
+    if len(states) > 0:
+        val = np.prod(states).astype(int)
+        logger.debug(f"Returning product {val}. ")
+        return val
+    else:
+        logger.debug(f"No active boxes detected. Return default value of 1. ")
+        return 1
+
+
 def seed_fill_img(neuron_img: np.ndarray, clicks: List[tuple]):
     """Using specified seed points, create a filter with a flood fill style
     
@@ -136,15 +169,15 @@ def seed_fill_img(neuron_img: np.ndarray, clicks: List[tuple]):
         raise TypeError(
             f"neuron_img has to be two-dimensional, passed shape is {neuron_img.shape}"
         )
-    master_mask = np.zeros_like(neuron_img).astype(np.bool)
+    master_mask = np.zeros_like(neuron_img).astype(np.int)
 
     for click in clicks:
-        tmp_mask = neuron_img > click[2] * neuron_img.std()
+        tmp_mask = neuron_img > click[3] * neuron_img.std()
         # at the time of writing flood needs floats to be float64
         tmp_mask = flood(
             tmp_mask.astype(np.float64), (int(click[0] + 0.5), int(click[1] + 0.5))
         )
-        master_mask = master_mask | tmp_mask
+        master_mask[tmp_mask] = click[2]
 
     return master_mask
 
@@ -173,7 +206,9 @@ def sigma_update_mask(results: Annotation, callback: "Callback") -> np.ndarray:
     logger.debug(f"Result neuron {index} type: {type(results.neuron[index])}")
     logger.debug(f"Result clicks {index} type: {type(results.clicks[index])}")
     logger.debug(f"Result clicks {index}: {results.clicks[index]}")
+
     img_mask = seed_fill_img(results.neuron[index], results.clicks[index])
+
     results.filters[index] = img_mask
 
     return img_mask
@@ -342,7 +377,15 @@ def make_fig1_callbacks(
             return
 
         if event.xdata != None and event.ydata != None and event.inaxes != mask_ax:
-            results.clicks[index].append([event.ydata, event.xdata, callback.sigma])
+            results.clicks[index].append(
+                [
+                    event.ydata,
+                    event.xdata,
+                    calculate_region_value(callback),
+                    callback.sigma,
+                ]
+            )
+            logger.debug(f"Recorded click information: {results.clicks[index][-1]}")
 
             logger.info(f"Click position: {int(event.ydata+0.5), int(event.xdata+0.5)}")
             logger.info(
@@ -351,6 +394,9 @@ def make_fig1_callbacks(
 
             img_mask = seed_fill_img(results.neuron[index], results.clicks[index])
             results.filters[index] = img_mask
+            logger.debug(
+                f"img_mask statistics: Min {np.min(img_mask)}, Max {np.max(img_mask)}"
+            )
 
             mask_ax.imshow(img_mask)
             overlay_clicks(results, mask_ax)
@@ -445,6 +491,7 @@ def make_box_callbacks(
 
         callback.textbox.ax.clear()
         callback.textbox = TextBox(callback.textbox.ax, "")
+        callback.textbox.on_submit(textbox_submit)
 
         fig1.canvas.draw_idle()
 
