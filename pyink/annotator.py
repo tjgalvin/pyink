@@ -70,6 +70,10 @@ class Annotation:
             for k in np.arange(self.neuron.shape[0])
         }
 
+        # recording lasso regions separately just in case in post-processing
+        # it is required, something maybe recalculated after
+        self.lasso_filters: Dict[int, list] = defaultdict(list)
+
     def evaluate_points(self, data: np.ndarray, index: int) -> np.ndarray:
         """Evaluate whether a set of data points fall withing a filter
         
@@ -427,12 +431,15 @@ def make_fig1_callbacks(
         logger.debug(f"Number of filters: {len(results.filters)}")
 
         mask = results.filters[index]
+        lasso_region = np.zeros_like(mask)
 
         logger.debug(f"Mask shape: {mask.shape}")
         logger.debug(f"Pix shape: {pix.shape}")
         mask[pix[indicies, 1], pix[indicies, 0]] = calculate_region_value(callback)
+        lasso_region[pix[:, 1], pix[0, :]] = indicies
 
         results.filters[index] = mask
+        results.lasso_filters[index].append(lass_region)
 
         mask_ax.imshow(results.filters[index])
 
