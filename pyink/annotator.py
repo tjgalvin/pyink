@@ -16,10 +16,9 @@ import pyink.utils as pu
 
 marker_style = ["ro", "g*", "yv"]
 
-# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("annotation")
-# logger.setLevel(logging.DEBUG)
 
+# Used to record unqiue combinations of regions
 PRIMES = {
     0: 2,
     1: 3,
