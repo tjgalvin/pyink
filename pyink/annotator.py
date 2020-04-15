@@ -396,6 +396,11 @@ def make_fig1_callbacks(
             )
 
             img_mask = seed_fill_img(results.neuron[index], results.clicks[index])
+
+            for i, lasso_img in enumerate(results.lasso_filters[index]):
+                logger.debug(f"Adding lasso image filter to img_mask")
+                img_mask += lasso_img
+
             results.filters[index] = img_mask
             logger.debug(
                 f"img_mask statistics: Min {np.min(img_mask)}, Max {np.max(img_mask)}"
@@ -435,10 +440,10 @@ def make_fig1_callbacks(
         logger.debug(f"Mask shape: {mask.shape}")
         logger.debug(f"Pix shape: {pix.shape}")
         mask[pix[indicies, 1], pix[indicies, 0]] = calculate_region_value(callback)
-        lasso_region[pix[:, 1], pix[0, :]] = indicies
+        lasso_region[pix[:, 1], pix[:, 0]] = indicies
 
         results.filters[index] = mask
-        results.lasso_filters[index].append(lass_region)
+        results.lasso_filters[index].append(lasso_region)
 
         mask_ax.imshow(results.filters[index])
 
