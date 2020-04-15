@@ -641,6 +641,6 @@ class CoordinateTransformer:
         transform_coords = (coords.T @ rotation).T
 
         if flip == 1:
-            transform_coords[0] = -transform_coords[0]
+            transform_coords[1] = -transform_coords[1]
 
         return (transform_coords[0], transform_coords[1])
