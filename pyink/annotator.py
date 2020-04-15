@@ -119,7 +119,7 @@ def overlay_clicks(results: Annotation, ax: plt.Axes, index: int = None):
         points = results.clicks[chan]
 
         for p in points:
-            ax.plot(p[1], p[0], marker, ms=12)
+            ax.plot(p[1], p[0], marker, ms=5)
 
 
 def calculate_region_value(callback: "Callback") -> int:
