@@ -7,7 +7,7 @@ import struct as st
 import os as os
 import sys as sys
 from itertools import product
-from typing import List, Set, Dict, Tuple, Optional, Union, TYPE_CHECKING
+from typing import List, Set, Dict, Tuple, Optional, Union, Any, TYPE_CHECKING
 
 import numpy as np
 import astropy.units as u
@@ -191,7 +191,7 @@ class ImageReader:
         return self.header[5]
 
     @property
-    def img_shape(self) -> Tuple[int, int, int]:
+    def img_shape(self) -> Tuple[Any, ...]:
         """The shape of a single source image. Will guarantee (channel, height, width) layout. 
         
         Returns:
@@ -305,7 +305,7 @@ class SOM:
         return self.header[4]
 
     @property
-    def som_shape(self) -> Tuple[int, int, int]:
+    def som_shape(self) -> Tuple[Any, ...]:
         """The size of each dimension on fhe SOM lattice. This will be guaranteed to be three dimensions (width, height, depth)
         
         Returns:
@@ -325,7 +325,7 @@ class SOM:
         return self.header[7]
 
     @property
-    def neuron_shape(self) -> Tuple[int, int, int]:
+    def neuron_shape(self) -> Tuple[Any, ...]:
         """The size of each dimension for a neuron. This is guaranteed to be three dimensions. 
         
         Returns:
@@ -583,8 +583,6 @@ class Transform:
             shape=data_shape,
         )
 
-        # self.data = np.swapaxes(self.data, 1, 2)
-
     def __iter__(self):
         """Produce a key iterating over the image axis
         """
@@ -615,7 +613,7 @@ class Transform:
         return self.header[4]
 
     @property
-    def som_shape(self) -> Tuple[int, int, int]:
+    def som_shape(self) -> Tuple[Any, ...]:
         """The dimensions of the SOM lattice layout. Note that by default the depth is appended to the height dimension in the data array. 
         
         Returns:
@@ -700,7 +698,7 @@ class CoordinateTransformer:
             if isinstance(self.pixel_scale, tuple)
             else (self.pixel_scale, self.pixel_scale)
         )
-        pixel_scale = [u.pixel_scale(ps / u.pixel) for ps in pixel_scale]
+        pixel_scale = tuple([u.pixel_scale(ps / u.pixel) for ps in pixel_scale])
 
         # RA increases right-to-left. The opposite of an array
         offsets = (
