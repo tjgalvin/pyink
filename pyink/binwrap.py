@@ -505,7 +505,15 @@ class Mapping:
 
 
 class Transform:
-    def __init__(self, path):
+    """Class to interact with PINK transformation files
+    """
+
+    def __init__(self, path: str):
+        """Transform intialiser
+        
+        Arguments:
+            path {str} -- path to the PINK transform file
+        """
         self.path = path
         self.offset = header_offset(self.path)
 
@@ -539,6 +547,8 @@ class Transform:
             yield i
 
     def read_header(self):
+        """Parse the PINK Transformation file header
+        """
         with open(self.path, "rb") as of:
             of.seek(self.offset)
 
@@ -551,11 +561,22 @@ class Transform:
             self.header = (ver, file_type, no_imgs, som_layout, som_rank, som_shape)
 
     @property
-    def som_rank(self):
+    def som_rank(self) -> int:
+        """The number of dimensions (height, width, depth) of the SOM lattice
+        
+        Returns:
+            int -- the number of dimensions of the SOM lattice
+        """
         return self.header[4]
 
     @property
-    def som_shape(self):
+    def som_shape(self) -> Tuple[int, int, int]:
+        """The dimensions of the SOM lattice layout. Note that by default the depth is appended to the height dimension in the data array. 
+        
+        Returns:
+            Tuple[int, int, int] -- The size of each dimension of the SOM layout as described in the header
+        """
+
         if self.som_rank == 2:
             return (*self.header[5], 1)
         return self.header[5]
