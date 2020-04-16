@@ -537,6 +537,7 @@ class Callback:
         self.currect_axes: int = None
         self.checkbox: Union[matplotlib.widgets.CheckButtons] = None
         self.textbox: Union[matplotlib.widgets.TextBox] = None
+        self.checkbox_activate: Tuple = None
 
 
 class Annotator:
