@@ -227,13 +227,15 @@ class SOM:
     TODO: Build in support for the Hexagonal SOM lattice layout
     """
 
-    def __init__(self, path):
+    def __init__(self, path: str):
+        """Create a wrapped around a PINK SOM binary file
+        
+        Arguments:
+            path {str} -- Path to the PINK SOM binary file
+        """
         self.path = path
         self.offset = header_offset(self.path)
 
-        # Initiated to None, but set in read_header. Here as reminder
-        self.header = None
-        self.data_start = None
         self.__read_header()
         self.__read_data()
 
@@ -294,27 +296,52 @@ class SOM:
         return self.data[tuple(idxs)]
 
     @property
-    def som_rank(self):
+    def som_rank(self) -> int:
+        """Return the number of SOM dimensions on the lattice
+        
+        Returns:
+            int -- number of dimensions to the SOM lattice
+        """
         return self.header[4]
 
     @property
-    def som_shape(self):
+    def som_shape(self) -> Tuple[int, int, int]:
+        """The size of each dimension on fhe SOM lattice. This will be guaranteed to be three dimensions (width, height, depth)
+        
+        Returns:
+            Tuple[int, int, int] -- The size of each dimension of the SOM lattice as described in the header
+        """
         if self.som_rank == 2:
             return (*self.header[5], 1)
         return self.header[5]
 
     @property
-    def neuron_rank(self):
+    def neuron_rank(self) -> int:
+        """Number of dimensions to each neuron
+        
+        Returns:
+            int -- The number of dimensions to each neuron as described by the header
+        """
         return self.header[7]
 
     @property
-    def neuron_shape(self):
+    def neuron_shape(self) -> Tuple[int, int, int]:
+        """The size of each dimension for a neuron. This is guaranteed to be three dimensions. 
+        
+        Returns:
+            Tuple[int, int, int] -- The size of each neuron described by the header
+        """
         if self.neuron_rank == 2:
             return (1, *self.header[8])
         return self.header[8]
 
     @property
-    def neuron_size(self):
+    def neuron_size(self) -> int:
+        """The total number of pixels across all dimensions for a single neuron
+        
+        Returns:
+            int -- The total number of pixels across all dimensions for a single neuron
+        """
         return np.prod(self.neuron_shape)
 
     def __read_data(self):
