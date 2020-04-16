@@ -133,14 +133,26 @@ def resolve_data_type(dtype):
 
 
 class ImageReader:
-    def __init__(self, path):
+    """Object to help manage the interaction of a PINK image binary file
+    """
+
+    def __init__(self, path: str) -> None:
+        """Establish a new ImageReader class around a PINK image binary file
+        
+        Arguments:
+            path {str} -- Path to the PINK image binary
+        
+        Raises:
+            ValueError: Raised when PINK image binary does not exists
+        """
+
         if not os.path.exists(path):
             raise ValueError(f"{path} does not exist")
 
         self.path = path
         self.header_start = header_offset(self.path)
 
-        self.read_header()
+        self.__read_header()
 
         data_shape = (self.header[3], *self.img_shape)
         self.data = np.memmap(
@@ -152,7 +164,9 @@ class ImageReader:
             shape=data_shape,
         )
 
-    def read_header(self):
+    def __read_header(self) -> None:
+        """Process the file header associated with the PINK binary formate of an image binary. 
+        """
         with open(self.path, "rb") as of:
             of.seek(self.header_start)
 
@@ -168,11 +182,21 @@ class ImageReader:
             self.dtype = resolve_data_type(dtype)
 
     @property
-    def img_rank(self):
+    def img_rank(self) -> int:
+        """The number of image dimensions as described by the file header
+        
+        Returns:
+            int -- the number of image dimensions of a single source image
+        """
         return self.header[5]
 
     @property
-    def img_shape(self):
+    def img_shape(self) -> Tuple[int, int, int]:
+        """The shape of a single source image. Will guarantee (channel, height, width) layout. 
+        
+        Returns:
+            Tuple[int, int, int] -- The dimenions of a single source image
+        """
         if self.img_rank == 2:
             return (*self.header[6], 1)
         return self.header[6]
