@@ -47,5 +47,5 @@ def pink_spatial_transform(
         _pink_spatial_transform(img, transform)
     else:
         raise ValueError(
-            f"Image to transform must be either (channel, height, width_or (height, width). Got image of shape {img.shape}"
+            f"Image to transform must be either of shape (channel, height, width) or (height, width). Got image of shape {img.shape}"
         )
