@@ -234,8 +234,8 @@ class SOM:
         # Initiated to None, but set in read_header. Here as reminder
         self.header = None
         self.data_start = None
-        self.read_header()
-        self.read_data()
+        self.__read_header()
+        self.__read_data()
 
     def __str__(self):
         """Neat string output for the SOM
@@ -317,7 +317,7 @@ class SOM:
     def neuron_size(self):
         return np.prod(self.neuron_shape)
 
-    def read_data(self):
+    def __read_data(self):
         som_shape = self.som_shape
         neuron_shape = self.neuron_shape
         data_shape = som_shape + neuron_shape
@@ -357,9 +357,7 @@ class SOM:
             som_shape[1] * som_shape[2] * neuron_shape[2],
         )
 
-        # self.data = np.swapaxes(self.data, 1, 2)
-
-    def read_header(self):
+    def __read_header(self):
         with open(self.path, "rb") as of:
             of.seek(self.offset)
 
@@ -406,10 +404,8 @@ class Mapping:
         self.path = path
         self.offset = header_offset(self.path)
 
-        # Initiated to None, but set in read_header. Here as reminder
-        self.header = None
         self.data_start = None
-        self.read_header()
+        self.__read_header()
 
         data_shape = (
             self.header[3],
@@ -431,7 +427,7 @@ class Mapping:
         for i in range(self.header[3]):
             yield i
 
-    def read_header(self) -> None:
+    def __read_header(self) -> None:
         """Process the initial header information of the Mapping binary file
         """
         with open(self.path, "rb") as of:
@@ -541,10 +537,8 @@ class Transform:
         self.path = path
         self.offset = header_offset(self.path)
 
-        # Initiated to None, but set in read_header. Here as reminder
-        self.header = None
         self.data_start = None
-        self.read_header()
+        self.__read_header()
         self.dtype = np.dtype([("flip", np.int8), ("angle", np.float32)])
 
         data_shape = (
@@ -570,7 +564,7 @@ class Transform:
         for i in range(self.header[3]):
             yield i
 
-    def read_header(self):
+    def __read_header(self):
         """Parse the PINK Transformation file header
         """
         with open(self.path, "rb") as of:
