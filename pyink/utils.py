@@ -2,6 +2,7 @@
 be used outside of pyink
 """
 from typing import Tuple
+import warnings
 
 import numpy as np
 from scipy.ndimage import rotate
@@ -19,6 +20,7 @@ def _pink_spatial_transform(
     Returns:
         np.ndarray -- Spatially transformed image
     """
+
     flip, angle = transform
 
     img = rotate(img, -np.rad2deg(angle), reshape=False)
@@ -44,7 +46,7 @@ def pink_spatial_transform(
     if len(img.shape) == 3:
         return np.array([_pink_spatial_transform(c_img, transform) for c_img in img])
     elif len(img.shape) == 2:
-        _pink_spatial_transform(img, transform)
+        return _pink_spatial_transform(img, transform)
     else:
         raise ValueError(
             f"Image to transform must be either of shape (channel, height, width) or (height, width). Got image of shape {img.shape}"
