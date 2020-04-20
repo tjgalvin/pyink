@@ -20,18 +20,22 @@ class ImageWriter:
     """
 
     def __init__(
-        self, binary_path, data_layout, data_header, comment=None, clobber=False
+        self,
+        binary_path,
+        data_layout: int,
+        data_header: Tuple[int, ...],
+        comment: str = None,
+        clobber: bool = False,
     ):
         if not clobber and os.path.exists(binary_path):
             raise ValueError(f"Path Exists: {binary_path}")
 
         self.fd = open(binary_path, "wb")
         if comment is not None:
-            self.fd.write(f"# {comment}")
+            self.fd.write(bytes(f"# {comment}", "ascii"))
 
-            # Ensure there is a header deliminter
             if "# END OF HEADER\n" not in comment:
-                self.fd.write("# END OF HEADER\n")
+                self.fd.write(b"# END OF HEADER\n")
 
         self.header_start = self.fd.tell()
         self.header_end = None
@@ -69,7 +73,7 @@ class ImageWriter:
     def update_count(self):
         curr = self.fd.tell()
 
-        # 2 * 32 bits, integer is 32 bits
+        # 2 * 32 bits, start of number of images field
         self.fd.seek(self.header_start + 3 * 4)
         self.fd.write(st.pack("i", int(self.count)))
 
@@ -79,15 +83,18 @@ class ImageWriter:
         self.update_count()
         self.fd.close()
 
-    def add(self, d, update_count=True, nonfinite_check: bool = True):
-        assert self.data_header == d.shape, ValueError("Shape do not match")
+    def add(
+        self, img: np.ndarray, update_count: bool = True, nonfinite_check: bool = True
+    ):
+        assert self.data_header == img.shape, ValueError("Shape do not match")
 
-        if nonfinite_check and np.sum(~np.isfinite(d)) > 0:
+        if nonfinite_check and np.sum(~np.isfinite(img)) > 0:
             raise ValueError(
                 "Non-finite values have been detected in the input image. This will cause PINK to fail. "
             )
 
-        d.astype("f").tofile(self.fd)
+        # TODO: Support data-type encoding. This is planned in PINK but not implemented.
+        img.astype("f").tofile(self.fd)
 
         if update_count:
             self.count += 1
