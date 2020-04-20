@@ -17,6 +17,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=["markdown", "numpy", "astropy",],
+    install_requires=["scipy", "numpy", "astropy",],
     python_requires=">=3.6",
 )
