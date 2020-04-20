@@ -7,13 +7,12 @@ import struct as st
 import os as os
 import sys as sys
 from itertools import product
-from typing import List, Set, Dict, Tuple, Optional, Union, Any, TYPE_CHECKING
-
+from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable, Sequence
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 
-from pyink import pink_spatial_transform
+from .utils import pink_spatial_transform
 
 
 class ImageWriter:
@@ -80,8 +79,13 @@ class ImageWriter:
         self.update_count()
         self.fd.close()
 
-    def add(self, d, update_count=True):
+    def add(self, d, update_count=True, nonfinite_check: bool = True):
         assert self.data_header == d.shape, ValueError("Shape do not match")
+
+        if nonfinite_check and np.sum(~np.isfinite(d)) > 0:
+            raise ValueError(
+                "Non-finite values have been detected in the input image. This will cause PINK to fail. "
+            )
 
         d.astype("f").tofile(self.fd)
 
@@ -217,6 +221,26 @@ class ImageReader:
         src_img = self.data[idx].copy()
 
         return pink_spatial_transform(src_img, transform)
+
+    def transform_images(
+        self, idxs: Sequence[int], transforms: Sequence[Tuple[int, float]]
+    ) -> np.ndarray:
+        """Return a set of transformed images given a set of indicies and PINK transform
+        
+        Arguments:
+            idxs {Sequence[int]} -- Index of images to return
+            transforms {Sequence[Tuple[int, float]]} -- PINK transform function of each image
+        
+        Returns:
+            np.ndarray -- Set of transformed images
+        """
+        assert len(idxs) == len(transforms), ValueError(
+            f"Lengths of idxs and transforms are not equal"
+        )
+
+        return np.array(
+            [self.transform(idx, transform) for idx, transform in zip(idxs, transforms)]
+        )
 
 
 class SOM:
