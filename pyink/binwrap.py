@@ -623,4 +623,3 @@ class Transform:
         if self.som_rank == 2:
             return (*self.header[5], 1)
         return self.header[5]
-

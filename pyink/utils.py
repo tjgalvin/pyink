@@ -138,18 +138,15 @@ class CoordinateTransformer:
         return offsets
 
     def __spatial_transform_points(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Apply the PINK spatial transformation to pixel coordinates.
+        """Apply the PINK spatial transformation to pixel coordinates. Internally the 
+        angle is negated so that rotation occurs in the same clockwise direction as PINK. 
         
         Returns:
             Tuple[np.ndarray, np.ndarray] -- Spatially transformed points
         """
         flip, angle = self.transform
 
-        # TODO: This in principal should not be needed, but it seems to
-        # TODO: be necessary to align the points onto the neuron. The
-        # TODO: reason why this is required needs to be identified.
-        # TODO: From what I can tell in simple test code the rotation matrix
-        # TODO: below rotates clockwise - the same way PINK does.
+        # Rotation matrix rotates anti-clockwise
         angle = -angle
 
         rotation = np.array(
@@ -162,4 +159,4 @@ class CoordinateTransformer:
         if flip == 1:
             transform_coords[1] = -transform_coords[1]
 
-        return (transform_coords[0], transform_coords[1])
+        return (transform_coords[0] * u.pixel, transform_coords[1] * u.pixel)
