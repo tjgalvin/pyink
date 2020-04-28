@@ -83,7 +83,9 @@ class Annotation:
         Returns:
             np.ndarray -- Boolean array of whether data points fall within a region
         """
-        pass
+        raise NotImplementedError(
+            "This is a stub method that may be expanded at a later date."
+        )
 
     def transform_evaluate_points(
         self, data: np.ndarray, transform: Tuple[int, float], index: int
@@ -98,7 +100,9 @@ class Annotation:
         Returns:
             np.ndarray -- Boolean array of whether data points fall within a region
         """
-        pass
+        raise NotImplementedError(
+            "This is a stub method that may be expanded at a later date."
+        )
 
 
 # -------------------------------------
