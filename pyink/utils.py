@@ -79,6 +79,12 @@ class CoordinateTransformer:
         """Create a new instance of the CoordinateTransformer. Turns positions within
         the sky-reference frame to the neuron-reference frame
         
+        It is probably best practise to ensure each image has a reference pixel within
+        the FoV to avoid and image distortions from projection effects. If each image has
+        a local coordinate-reference position then supplying a pixel_scale should be sufficent. 
+        If the coordinate-reference position is sufficently far away then a WCS object
+        should be supplied. 
+
         Arguments:
             center_coord {SkyCoord} -- RA/Dec center position to rotate around
             sky_coord {SkyCoord} -- RA/Dec coordinates to transform
@@ -122,8 +128,6 @@ class CoordinateTransformer:
     def __delta_sky_to_pixels(self) -> Tuple[np.ndarray, np.ndarray]:
         """Transform the spherical offsets from the sky-reference frame to a
         pixel-reference frame. 
-
-        TODO: Consider incorporating a proper WCS skycoord_to_pixel scheme? 
         
         Returns:
             Tuple[np.ndarray, np.ndarray] -- Coordinates in a pixel-reference frame
