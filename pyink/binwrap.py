@@ -21,12 +21,35 @@ class ImageWriter:
 
     def __init__(
         self,
-        binary_path,
+        binary_path: str,
         data_layout: int,
         data_header: Tuple[int, ...],
         comment: str = None,
         clobber: bool = False,
     ):
+        """Creates a new ImageWriter object. 
+
+        Note that it would be best practise to ensure that images are reprojected to a local reference pixel. 
+        This currently is not performed by this classs. 
+        
+        Arguments:
+            binary_path {str} -- Output path of the image binary file
+            data_layout {int} -- Cartesian or hexagonal layout following the PINK specification
+            data_header {Tuple[int, ...]} -- Image dimensions
+        
+        Keyword Arguments:
+            comment {str} -- A comment to place in the file header (default: {None})
+            clobber {bool} -- Overwrite binary if it already exists (default: {False})
+        
+        Raises:
+            ValueError: Raised if clobber is not True and the output image file exists
+        
+        """
+        if data_layout != 0:
+            raise NotImplemented(
+                f"Only cartesian layout modes (mode `0`) are currently supported. Supplied mode was {data_layout}"
+            )
+
         if not clobber and os.path.exists(binary_path):
             raise ValueError(f"Path Exists: {binary_path}")
 
@@ -47,13 +70,22 @@ class ImageWriter:
         self.create_header()
 
     def __enter__(self):
+        """Beginning of the context manager
+        
+        Returns:
+            ImageWriter -- Returning the ImageWriter instance
+        """
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Exit of the context manager. Will update the header and close the file descriptor
+        """
         self.update_count()
         self.close()
 
     def create_header(self):
+        """Internal function used to create a header to the PINK image file
+        """
 
         self.fd.seek(self.header_start)
         self.fd.write(st.pack("i", 2))  # version number of PINK
@@ -71,6 +103,8 @@ class ImageWriter:
         self.header_end = self.fd.tell()
 
     def update_count(self):
+        """Update the header field of file corresponding to the number of images
+        """
         curr = self.fd.tell()
 
         # 2 * 32 bits, start of number of images field
@@ -80,12 +114,23 @@ class ImageWriter:
         self.fd.seek(curr)
 
     def close(self):
+        """Closes the file descriptor after updating the file header. 
+        """
         self.update_count()
         self.fd.close()
 
-    def add(
-        self, img: np.ndarray, update_count: bool = True, nonfinite_check: bool = True
-    ):
+    def add(self, img: np.ndarray, nonfinite_check: bool = True):
+        """Appends a new image to the end of the image file and updates the file header
+        
+        Arguments:
+            img {np.ndarray} -- Image array of shance (z, y, x) to the file. If z = 1 it may be ignored. 
+        
+        Keyword Arguments:
+            nonfinite_check {bool} -- Ensure that only finite values are in images, which would otherwise cause PINK to behave in strange ways (default: {True})
+        
+        Raises:
+            ValueError: Raised if not all pixels have finite values
+        """
         assert self.data_header == img.shape, ValueError("Shape do not match")
 
         if nonfinite_check and np.sum(~np.isfinite(img)) > 0:
@@ -96,9 +141,8 @@ class ImageWriter:
         # TODO: Support data-type encoding. This is planned in PINK but not implemented.
         img.astype("f").tofile(self.fd)
 
-        if update_count:
-            self.count += 1
-            self.update_count()
+        self.count += 1
+        self.update_count()
 
 
 def header_offset(path):
