@@ -115,7 +115,11 @@ class Annotation:
         """
         primes = [i for i in PRIMES.values() if label_value % i == 0]
 
-        return [k for k, v in PRIMES if v in primes]
+        lookup: Dict[int, str] = {}
+        for l in self.labels:
+            lookup[l[1]] = l[0]
+
+        return tuple([lookup[p] for p in primes])
 
 
 # -------------------------------------
