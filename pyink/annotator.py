@@ -104,6 +104,20 @@ class Annotation:
             "This is a stub method that may be expanded at a later date."
         )
 
+    def resolve_label(self, label_value: int) -> Tuple[str, ...]:
+        """Given a label integer value, work out the corresponding labels that were activated by the user. 
+        
+        Arguments:
+            label_value {int} -- Desired label value to look for
+        
+        Returns:
+            Tuple[str, ...] -- The string labels corresponding to that label
+        """
+        primes = [i for i in PRIMES.values() if i label_value % 1 == 0]
+        
+        return [k for k, v in PRIMES if v in primes]
+
+
 
 # -------------------------------------
 def overlay_clicks(results: Annotation, ax: plt.Axes, index: int = None):

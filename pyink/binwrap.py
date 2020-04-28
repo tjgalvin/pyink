@@ -12,7 +12,9 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 
-from .utils import pink_spatial_transform
+# TODO: Refactor module components to avoid potential circular dependencies
+# Hack to fix circular imports
+import pyink
 
 
 class ImageWriter:
@@ -271,7 +273,7 @@ class ImageReader:
 
         src_img = self.data[idx].copy()
 
-        return pink_spatial_transform(src_img, transform)
+        return pyink.pink_spatial_transform(src_img, transform)
 
     def transform_images(
         self, idxs: Sequence[int], transforms: Sequence[Tuple[int, float]]

@@ -10,7 +10,7 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy.wcs import WCS
 from astropy.wcs.utils import skycoord_to_pixel
 
-from .annotator import Annotation
+from pyink.annotator import Annotation
 
 
 def _pink_spatial_transform(
@@ -60,48 +60,6 @@ def pink_spatial_transform(
 
 # ----------------------------
 
-
-class Filter:
-    """Object to maintain the results of a cookie-cutter type projection of 
-    spatially transformed coordinates and their evaluation against their BMU filter
-    """
-
-    def __init__(
-        self, coords: CoordinateTransformer, neuron: Annotation, channel: int = 0
-    ):
-        """Creates a new filter instance to project spatially transformed coordinates onto an annotated neuron
-        
-        Arguments:
-            coords {CoordinateTransformer} -- Set of spatially transformed coordinates to project and evaluate
-            neuron {Annotation} -- Previously annotated neuron with saved filters
-        
-        Keyword Arguments:
-            channel {int} -- Which filter channel to project coordinates onto (default: {0})
-        """
-
-        self.coords = coords
-        self.neuron = neuron
-        self.channel = channel
-
-        self._evaluate()
-
-    def _evaluate(self):
-        """Perform the projection of spatially transformed positions onto  a neuron
-
-        TODO: Consider moving the logic to a separate function for access outside of this class?
-        """
-        filter = self.neuron.filters[self.channel]
-        size = np.array(filter.shape)
-        center = size / 2
-
-        ra_pix, dec_pix = self.coords.coords["offset-neuron"]
-
-        # Recall C-style ordering of two-dimensional arrays. Shouldn't matter
-        # too much as PINK enforces equal image dimensions for x/y axes
-        ra_pix = ra_pix.value + center[1]
-        dec_pix = dec_pix.value + center[0]
-
-        self.labels = filter[dec_pix, ra_pix]
 
 
 class CoordinateTransformer:
@@ -236,3 +194,47 @@ class CoordinateTransformer:
             transform_coords[1] = -transform_coords[1]
 
         return (transform_coords[0] * u.pixel, transform_coords[1] * u.pixel)
+
+
+class Filter:
+    """Object to maintain the results of a cookie-cutter type projection of 
+    spatially transformed coordinates and their evaluation against their BMU filter
+    """
+
+    def __init__(
+        self, coords: CoordinateTransformer, neuron: Annotation, channel: int = 0
+    ):
+        """Creates a new filter instance to project spatially transformed coordinates onto an annotated neuron
+        
+        Arguments:
+            coords {CoordinateTransformer} -- Set of spatially transformed coordinates to project and evaluate
+            neuron {Annotation} -- Previously annotated neuron with saved filters
+        
+        Keyword Arguments:
+            channel {int} -- Which filter channel to project coordinates onto (default: {0})
+        """
+
+        self.coords = coords
+        self.neuron = neuron
+        self.channel = channel
+
+        self._evaluate()
+
+    def _evaluate(self):
+        """Perform the projection of spatially transformed positions onto  a neuron
+
+        TODO: Consider moving the logic to a separate function for access outside of this class?
+        """
+        filter = self.neuron.filters[self.channel]
+        size = np.array(filter.shape)
+        center = size / 2
+
+        ra_pix, dec_pix = self.coords.coords["offset-neuron"]
+
+        # Recall C-style ordering of two-dimensional arrays. Shouldn't matter
+        # too much as PINK enforces equal image dimensions for x/y axes
+        ra_pix = ra_pix.value + center[1]
+        dec_pix = dec_pix.value + center[0]
+
+        # TODO: Consider desired behaviour when it comes to rounding pixel coordinates
+        self.labels = filter[dec_pix.astype(int), ra_pix.astype(int)]
