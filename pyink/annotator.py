@@ -113,10 +113,9 @@ class Annotation:
         Returns:
             Tuple[str, ...] -- The string labels corresponding to that label
         """
-        primes = [i for i in PRIMES.values() if i label_value % 1 == 0]
-        
-        return [k for k, v in PRIMES if v in primes]
+        primes = [i for i in PRIMES.values() if label_value % i == 0]
 
+        return [k for k, v in PRIMES if v in primes]
 
 
 # -------------------------------------
