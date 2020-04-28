@@ -7,6 +7,8 @@ import numpy as np
 from scipy.ndimage import rotate
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
+from astropy.wcs import WCS
+from astropy.wcs.utils import skycoord_to_pixel
 
 
 def _pink_spatial_transform(
@@ -71,6 +73,8 @@ class CoordinateTransformer:
         sky_coords: SkyCoord,
         transform: Tuple[int, float],
         pixel_scale: Union[None, Angle, Tuple[Angle, Angle]] = u.arcsecond,
+        wcs: Union[None, WCS] = None,
+        img_size: Union[None, Tuple[int, int]] = None,
     ) -> None:
         """Create a new instance of the CoordinateTransformer. Turns positions within
         the sky-reference frame to the neuron-reference frame
@@ -82,20 +86,27 @@ class CoordinateTransformer:
         
         Keyword Arguments:
             pixel_scale {Union[None,Angle, Tuple[Angle, Angle]]} -- PINK scale of the neuron (default: {1*u.arcsecond})
+            wcs {Union[None, WCS]} -- WCS object that corresponds to an image of interest (default: {None})
         """
         self.center_coord = center_coord
         self.pixel_scale = pixel_scale
         self.transform = transform
+        self.wcs = wcs
 
         self.coords: Dict[str, np.ndarray] = {}
         self.coords["sky"] = sky_coords
         self.coords["offsets-angular"] = self.__spherical_offsets()
 
-        # TODO: Transform the angular offsets before they become pixel offsets
-
-        if self.pixel_scale is not None:
+        if self.wcs is not None:
+            self.coords["offsets-pixel"] = self.__wcs_skycoord_to_pixels()
+        elif self.pixel_scale is not None:
             self.coords["offsets-pixel"] = self.__delta_sky_to_pixels()
-            self.coords["offsets-neuron"] = self.__spatial_transform_points()
+        else:
+            raise ValueError(
+                "Missing WCS and pixel scale information. At least one has to be provided. "
+            )
+
+        self.coords["offsets-neuron"] = self.__spatial_transform_points()
 
     def __spherical_offsets(self) -> Tuple[np.ndarray, np.ndarray]:
         """Calculate the spherical offsets between the centre point and
@@ -136,6 +147,19 @@ class CoordinateTransformer:
         )
 
         return offsets
+
+    def __wcs_skycoord_to_pixels(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Use the wcs.utils skycoord_to_pixel to derive the pixel positions
+        
+        Returns:
+            Tuple[np.ndarray, np.ndarray] -- Pixels coordinate postions of nearby sources
+        """
+        pix = skycoord_to_pixel(self.coords["sky"], self.wcs) * u.pixel
+        center_pix = skycoord_to_pixel(self.center_coord, self.wcs) * u.pixel
+
+        pix = [p - c for p, c in zip(pix, center_pix)]
+
+        return pix
 
     def __spatial_transform_points(self) -> Tuple[np.ndarray, np.ndarray]:
         """Apply the PINK spatial transformation to pixel coordinates. Internally the 
