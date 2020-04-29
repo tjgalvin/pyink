@@ -1,10 +1,10 @@
 
-from typing import List, Set, Dict, Tuple, Optional, Union, Any, TYPE_CHECKING
+from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable
 import logging
 
 import numpy as np
-from scipy.ndimage import rotate
 import astropy.units as u
+import matplotlib.pyplot as plt
 from astropy.coordinates import SkyCoord, Angle
 from astropy.wcs import WCS
 from astropy.wcs.utils import skycoord_to_pixel
@@ -153,23 +153,31 @@ class Filter:
     """
 
     def __init__(
-        self, coords: CoordinateTransformer, neuron: Annotation, channel: int = 0
+        self, coords: CoordinateTransformer, neuron: Annotation, channel: int = 0, plot: bool=False
     ):
         """Creates a new filter instance to project spatially transformed coordinates onto an annotated neuron
-        
+
         Arguments:
             coords {CoordinateTransformer} -- Set of spatially transformed coordinates to project and evaluate
             neuron {Annotation} -- Previously annotated neuron with saved filters
         
         Keyword Arguments:
             channel {int} -- Which filter channel to project coordinates onto (default: {0})
+            plot {bool} -- Produce a plot of the filter and overlaid components (default: {False})
         """
 
         self.coords = coords
         self.neuron = neuron
         self.channel = channel
 
+        self.ra_pix: np.ndarray = None
+        self.dec_pix: np.ndarray = None
+
         self._evaluate()
+        
+
+        if plot:
+            self.plot()
 
     def _evaluate(self):
         """Perform the projection of spatially transformed positions onto  a neuron
@@ -177,15 +185,35 @@ class Filter:
         TODO: Consider moving the logic to a separate function for access outside of this class?
         """
         filter = self.neuron.filters[self.channel]
-        size = np.array(filter.shape)
-        center = size / 2
+        center = np.array(filter.shape) / 2
 
         ra_pix, dec_pix = self.coords.coords["offset-neuron"]
 
         # Recall C-style ordering of two-dimensional arrays. Shouldn't matter
         # too much as PINK enforces equal image dimensions for x/y axes
-        ra_pix = ra_pix.value + center[1]
-        dec_pix = dec_pix.value + center[0]
+        self.ra_pix = ra_pix.value + center[1]
+        self.dec_pix = dec_pix.value + center[0]
 
         # TODO: Consider desired behaviour when it comes to rounding pixel coordinates
         self.labels = filter[dec_pix.astype(int), ra_pix.astype(int)]
+
+    def plot(self, fig: plt.Figure = None, ax: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
+        """Produce a basic diagnostic plot to examine where coordinates fall one a neuron
+        
+        Keyword Arguments:
+            fig {plt.Figure} -- Figure object to plot onto. Will be created if None (default: {None})
+            ax {plt.Axes} -- Axes object to plot onto. Will be created if None (default: {None})
+        
+        Returns:
+            fig {plt.Figure} -- Figure object used for plotting
+            ax {plt.Axes} -- Axes object used for plotting
+        """
+        if fig is None:
+            fig = plt.Figure()
+        if ax is None:
+            ax = fig.add_subplot(111)
+        
+        ax.imshow(self.neuron.filters[self.channel])
+        ax.plot(self.ra_pix, self.dec_pix)
+
+        return fig, ax
