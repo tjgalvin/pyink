@@ -6,6 +6,7 @@ coordinates
 import struct as st
 import os as os
 import sys as sys
+import logging
 from itertools import product
 from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable, Sequence
 
@@ -14,6 +15,8 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 
 import pyink as pu
+
+logger = logging.getLogger(__name__)
 
 
 class ImageWriter:
@@ -167,8 +170,7 @@ def resolve_data_type(dtype):
     """Stub function to act as a lookup for the datatypes within binaries
     
     TODO: Expand this to be loaded as the appropriate datatypes in the binary classes
-    TODO: Produce the reverse so the ImageWriter acts appropriately
-
+    
     Arguments:
         header {tuple} -- Pink file header
     """
@@ -185,7 +187,12 @@ def resolve_data_type(dtype):
         9: np.uint64,
     }
 
-    return types[dtype]
+    try:
+        return types[dtype]
+    except KeyError:
+        inverse_types = {v: k for k, v in types.items()}
+
+        return inverse_types[dtype]
 
 
 class ImageReader:
@@ -482,6 +489,10 @@ class SOM:
                 neuron_layout,
                 neuron_rank,
                 neuron_shape,
+            )
+
+            logger.debug(
+                f"data_type {dtype} resolves to type: {resolve_data_type(dtype)}"
             )
 
             self.header = header
