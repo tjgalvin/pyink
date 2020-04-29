@@ -8,13 +8,12 @@ import os as os
 import sys as sys
 from itertools import product
 from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable, Sequence
+
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 
-# TODO: Refactor module components to avoid potential circular dependencies
-# Hack to fix circular imports
-import pyink
+import pyink as pu
 
 
 class ImageWriter:
@@ -273,7 +272,7 @@ class ImageReader:
 
         src_img = self.data[idx].copy()
 
-        return pyink.pink_spatial_transform(src_img, transform)
+        return pu.pink_spatial_transform(src_img, transform)
 
     def transform_images(
         self, idxs: Sequence[int], transforms: Sequence[Tuple[int, float]]
