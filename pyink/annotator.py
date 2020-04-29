@@ -12,7 +12,7 @@ from matplotlib.widgets import LassoSelector, CheckButtons, TextBox
 from matplotlib.path import Path
 from skimage.segmentation import flood
 
-import pyink.binwrap as pu
+import pyink as pu
 
 marker_style = ["ro", "g*", "yv"]
 
