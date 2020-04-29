@@ -16,7 +16,7 @@ import pyink.binwrap as pu
 
 marker_style = ["ro", "g*", "yv"]
 
-logger = logging.getLogger("annotation")
+logger = logging.getLogger(__name__)
 
 # Used to record unqiue combinations of regions
 PRIMES = {
@@ -115,6 +115,7 @@ class Annotation:
         """
         primes = [i for i in PRIMES.values() if label_value % i == 0]
 
+        # Reverse the labels so a prime number resolves to a string
         lookup: Dict[int, str] = {}
         for l in self.labels:
             lookup[l[1]] = l[0]
