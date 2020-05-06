@@ -176,14 +176,19 @@ def circular_mask(
     return mask
 
 
-def island_segmentation(data: np.ndarray, threshold: float) -> Iterator[np.ndarray]:
+def island_segmentation(
+    data: np.ndarray, threshold: float, return_background: bool = False
+) -> Iterator[np.ndarray]:
     """Yield a set of masks that denote unique islands in a image after a threshold operation
     has been applied. 
     
     Arguments:
         data {np.ndarray} -- Data to produce a set of islands of
         threshold {float} -- Threshold level to create the set of islands of
-    
+
+    Keyword Arguments:
+        return_background {boo} -- Return the zero-index background region determined by scikit-img (default: {False}) 
+
     Returns:
         Iterator[np.ndarray] -- Set of island masks
     """
@@ -192,4 +197,6 @@ def island_segmentation(data: np.ndarray, threshold: float) -> Iterator[np.ndarr
     img_labels, no_labels = label(mask, return_num=True)
 
     for i in range(no_labels):
+        if i == 0 and return_background is False:
+            continue
         yield img_labels == i
