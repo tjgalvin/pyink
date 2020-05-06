@@ -96,7 +96,7 @@ def minmax(data: np.ndarray, mask: np.ndarray = None) -> np.ndarray:
         mask = np.ones_like(data, dtype=np.bool)
 
     scaled = (data - np.nanmin(data[mask])) / (
-        np.max(data[mask]) - np.nanmin(data[mask])
+        np.nanmax(data[mask]) - np.nanmin(data[mask])
     )
 
     return scaled
@@ -177,7 +177,10 @@ def circular_mask(
 
 
 def island_segmentation(
-    data: np.ndarray, threshold: float, return_background: bool = False
+    data: np.ndarray,
+    threshold: float,
+    return_background: bool = False,
+    minimum_island_size: int = 5,
 ) -> Iterator[np.ndarray]:
     """Yield a set of masks that denote unique islands in a image after a threshold operation
     has been applied. 
@@ -187,7 +190,8 @@ def island_segmentation(
         threshold {float} -- Threshold level to create the set of islands of
 
     Keyword Arguments:
-        return_background {boo} -- Return the zero-index background region determined by scikit-img (default: {False}) 
+        return_background {bool} -- Return the zero-index background region determined by scikit-img (default: {False}) 
+        minimum_island_size {int} -- The minimum number of pixels required for an island to be returned. Useful to avoid noise peaks creeping through (default: {5})
 
     Returns:
         Iterator[np.ndarray] -- Set of island masks
@@ -198,5 +202,7 @@ def island_segmentation(
 
     for i in range(no_labels):
         if i == 0 and return_background is False:
+            continue
+        if np.sum(mask) <= minimum_island_size:
             continue
         yield img_labels == i
