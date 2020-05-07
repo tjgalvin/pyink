@@ -186,8 +186,8 @@ def island_segmentation(
     has been applied. 
     
     Arguments:
-        data {np.ndarray} -- Data to produce a set of islands of
-        threshold {float} -- Threshold level to create the set of islands of
+        data {np.ndarray} -- Data to produce a set of islands
+        threshold {float} -- Threshold level to create the set of islands
 
     Keyword Arguments:
         return_background {bool} -- Return the zero-index background region determined by scikit-img (default: {False}) 
@@ -203,6 +203,8 @@ def island_segmentation(
     for i in range(no_labels):
         if i == 0 and return_background is False:
             continue
-        if np.sum(mask) <= minimum_island_size:
+
+        island_mask = img_labels == i
+        if np.sum(island_mask) <= minimum_island_size:
             continue
-        yield img_labels == i
+        yield island_mask
