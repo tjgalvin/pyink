@@ -171,7 +171,7 @@ class ImageWriter:
         if path is None:
             path = f"{self.binary_path}{REC_SUFFIX}"
 
-        if len(path) == self.count:
+        if len(self.records) == self.count:
             with open(path, "rb") as out:
                 logger.debug(f"Writing {path}")
                 pickle.dump(self.records, out)
