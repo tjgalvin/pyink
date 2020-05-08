@@ -115,9 +115,9 @@ def square_mask(data: np.ndarray, size: int = None, scale: float = None) -> np.n
     Returns:
         np.ndarray -- Square boolean array mask
     """
-    assert (
+    assert not (
         size is not None and scale is not None
-    ), "Can only set a region based on `scale` or `size`, not both"
+    ), f"Only one of `size` or `scale` can be set at a time, currently are {size} and {scale} respectively. "
     img_size = np.array(data.shape)
     cen = img_size // 2
 
@@ -156,9 +156,9 @@ def circular_mask(
     Returns:
         np.ndarray -- Boolean array with a circular valid region at the center
     """
-    assert (
+    assert not (
         radius is not None and scale is not None
-    ), "Only `radius` or `scale` can be set, not both"
+    ), f"Only one of `radius` or `scale` can be set at a time, currently are {radius} and {scale} respectively. "
 
     if scale is not None:
         radius = data.shape[-1] / scale
