@@ -72,8 +72,8 @@ class ImageWriter:
         self.no_dimensions = len(data_header)
         self.data_header = data_header
         self.count = 0
-        self.records = []
         self.binary_path = binary_path
+        self.records: List[Any] = []
 
         self.create_header()
 
