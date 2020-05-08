@@ -61,6 +61,10 @@ class ImageWriter:
 
         self.fd = open(binary_path, "wb")
         if comment is not None:
+            # NOTE: Not entirely convinced the header works expected. To be tested.
+            # TODO: Consider getting `records` recorded in the header. Would require
+            # TODO: padding the header once `records` has been established so as to no
+            # TODO: overwrite the image data
             self.fd.write(bytes(f"# {comment}", "ascii"))
 
             if "# END OF HEADER\n" not in comment:
