@@ -7,6 +7,7 @@ import struct as st
 import os as os
 import sys as sys
 import logging
+import pickle
 from itertools import product
 from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable, Sequence
 
@@ -17,6 +18,7 @@ from astropy.coordinates import SkyCoord, Angle
 import pyink as pu
 
 logger = logging.getLogger(__name__)
+PKL_SUFFIX = ".records.pkl"
 
 
 class ImageWriter:
@@ -70,6 +72,8 @@ class ImageWriter:
         self.no_dimensions = len(data_header)
         self.data_header = data_header
         self.count = 0
+        self.records = []
+        self.binary_path = binary_path
 
         self.create_header()
 
@@ -84,7 +88,6 @@ class ImageWriter:
     def __exit__(self, exc_type, exc_value, traceback):
         """Exit of the context manager. Will update the header and close the file descriptor
         """
-        self.update_count()
         self.close()
 
     def create_header(self):
@@ -122,8 +125,11 @@ class ImageWriter:
         """
         self.update_count()
         self.fd.close()
+        self.save_records()
 
-    def add(self, img: np.ndarray, nonfinite_check: bool = True):
+    def add(
+        self, img: np.ndarray, nonfinite_check: bool = True, attributes: Any = None
+    ):
         """Appends a new image to the end of the image file and updates the file header
         
         Arguments:
@@ -131,7 +137,8 @@ class ImageWriter:
         
         Keyword Arguments:
             nonfinite_check {bool} -- Ensure that only finite values are in images, which would otherwise cause PINK to behave in strange ways (default: {True})
-        
+            attributes {Any} -- Information to store in the `records` attribute for each file, which will be serialised alongside the binary file(default: {None})
+
         Raises:
             ValueError: Raised if not all pixels have finite values
         """
@@ -145,8 +152,25 @@ class ImageWriter:
         # TODO: Support data-type encoding. This is planned in PINK but not implemented.
         img.astype("f").tofile(self.fd)
 
+        if attributes is not None:
+            self.records.append(attributes)
+
         self.count += 1
         self.update_count()
+
+    def save_records(self, path: str = None) -> None:
+        """Will pickle the records attribute if it is being used
+        
+        Keyword Arguments:
+            path {str} -- Output path to save records. If undefined it is based on the path set (default: {None})
+        """
+        if path is None:
+            path = f"{self.binary_path}{PKL_SUFFIX}"
+
+        if len(path) == self.count:
+            with open(path, "rb") as out:
+                logger.debug(f"Writing {path}")
+                pickle.dump(self.records, out)
 
 
 def header_offset(path):
@@ -199,18 +223,27 @@ class ImageReader:
     """Object to help manage the interaction of a PINK image binary file
     """
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, record_path: str = None) -> None:
         """Establish a new ImageReader class around a PINK image binary file
         
         Arguments:
             path {str} -- Path to the PINK image binary
         
+        Keyword Arguements:
+            record_path {str} -- Path to a serialised list to accompany the image binary (default: {None})
+
         Raises:
             ValueError: Raised when PINK image binary does not exists
         """
 
         if not os.path.exists(path):
             raise ValueError(f"{path} does not exist")
+        if record_path is None:
+            record_path = f"{path}{PKL_SUFFIX}"
+        if os.path.exists(record_path):
+            self.record_path = record_path
+            with open(self.record_path, "rb") as rec:
+                self.records = pickle.load(rec)
 
         self.path = path
         self.header_start = header_offset(self.path)
