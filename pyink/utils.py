@@ -3,6 +3,8 @@ be used outside of pyink
 """
 from typing import List, Set, Dict, Tuple, Optional, Union, Any, TYPE_CHECKING
 import logging
+import os
+import shutil
 
 import numpy as np
 from scipy.ndimage import rotate
@@ -86,7 +88,7 @@ class PathHelper:
             os.mkdir(path)
         self.path = path
 
-    def __getattr__(self, name: str) -> PathHelpher:
+    def __getattr__(self, name: str):
         """Will create a subdirectory of the specified base path
         
         Arguments:
@@ -110,4 +112,3 @@ class PathHelper:
         """
 
         return self.path
-
