@@ -18,7 +18,7 @@ from astropy.coordinates import SkyCoord, Angle
 import pyink as pu
 
 logger = logging.getLogger(__name__)
-PKL_SUFFIX = ".records.pkl"
+REC_SUFFIX = ".records.pkl"
 
 
 class ImageWriter:
@@ -165,7 +165,7 @@ class ImageWriter:
             path {str} -- Output path to save records. If undefined it is based on the path set (default: {None})
         """
         if path is None:
-            path = f"{self.binary_path}{PKL_SUFFIX}"
+            path = f"{self.binary_path}{REC_SUFFIX}"
 
         if len(path) == self.count:
             with open(path, "rb") as out:
@@ -239,7 +239,7 @@ class ImageReader:
         if not os.path.exists(path):
             raise ValueError(f"{path} does not exist")
         if record_path is None:
-            record_path = f"{path}{PKL_SUFFIX}"
+            record_path = f"{path}{REC_SUFFIX}"
         if os.path.exists(record_path):
             self.record_path = record_path
             with open(self.record_path, "rb") as rec:
