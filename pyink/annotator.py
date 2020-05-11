@@ -49,6 +49,14 @@ class Annotation:
 
     labels: List[Tuple[str, int]] = []
 
+    def __repr__(self) -> str:
+        """Neat string representation
+        
+        Returns:
+            str -- description for printing
+        """
+        return f"{self.neuron.shape}"
+
     def __init__(self, neuron: np.ndarray):
         """Create an annotation instance to manage neurion
         
@@ -566,10 +574,25 @@ class Annotator:
     """Class to drive the interactive annotation of SOM neurons
     """
 
+    def __repr__(self) -> str:
+        """Neat string representation of an Annotator instance
+        
+        Returns:
+            str -- string description of the Annotator class
+        """
+        s: str = f"Annotated SOM: {self.som.path} \n"
+
+        print("RESULTS: ", self.results)
+
+        no_ant: int = len(self.results.keys())
+        s += f"Annotated {no_ant} \n"
+
+        return s
+
     def __init__(
         self,
         som: Union[str, pu.SOM],
-        results: Dict[tuple, Annotation] = None,
+        results: Union[str, Dict[tuple, Annotation]] = None,
         save: Union[bool, str, None] = True,
     ):
         """An object to help manage and annotate a SOM and its neurons
@@ -578,17 +601,28 @@ class Annotator:
             som {Union[str, pu.SOM]} -- SOM file to annotate as a PINK binary
         
         Keyword Arguments:
-            results {Dict[tuple, Annotation]} -- Mapping for neurons and their corresponding Annotations (default: {None})
+            results {Union[str, Dict[tuple, Annotation]]} -- A path to a pickled Annotator object, an existing Dict of appropriate mappings for neurons and their corresponding Annotations. If None a new Dict is created. (default: {None})
             save {Union[bool, str, None]} -- Action to save (default: {True})
         
         Returns:
             [type] -- [description]
         """
         self.som = pu.SOM(som) if isinstance(som, str) else som
-        self.results: Dict[tuple, Annotation] = {} if results is None else results
-        self.save: Union[bool, str, None] = False
-
         logger.info(f"Loaded SOM {som}...")
+
+        if results is None:
+            self.results: Dict[tuple, Annotation] = {}
+        elif isinstance(results, str):
+            with open(results, "rb") as infile:
+                self.results = pickle.load(infile)
+        elif isinstance(results, dict):
+            self.results = results
+        else:
+            raise ValueError(
+                f"Expected either a path of a pickled Annotator or a Dict are accepted, got {type(results)}"
+            )
+
+        self.save: Union[bool, str, None] = False
         if save == True:
             self.save = f"{self.som.path}.annotation"
         elif isinstance(save, str):
@@ -603,6 +637,9 @@ class Annotator:
     ):
         """Perform the annotation for a specified neuron
         
+        TODO: Add options to enable / disable certain features like
+        lines, colour scales etc. 
+
         Arguments:
             key {tuple} -- Index of the neuron within the SOM
         
@@ -626,13 +663,19 @@ class Annotator:
         no_label = 1 if labeling else 0
 
         fig1, (axes, mask_axes) = plt.subplots(
-            2, no_chans + no_label, sharex=False, sharey=False, squeeze=False
+            2,
+            no_chans + no_label,
+            figsize=(5 * no_chans, 8),
+            sharex=False,
+            sharey=False,
+            squeeze=False,
         )
 
         # Manually link the axes
         ax_base = axes[0]
         ax_base.get_shared_x_axes().join(*axes[:-no_label], *mask_axes[:-no_label])
         ax_base.get_shared_y_axes().join(*axes[:-no_label], *mask_axes[:-no_label])
+        ax_base.set(title=f"{key}")
 
         logger.debug(f"Axes shape: {axes.shape}")
         logger.debug(f"Mask_axes shape: {mask_axes.shape}")
@@ -662,8 +705,11 @@ class Annotator:
 
         for i, (n, ax) in enumerate(zip(neuron, axes.flat)):
             logger.debug(f"Loading neuron image channel {i+1} of {neuron.shape[0]}")
-            ax.imshow(np.sqrt(n), cmap=cmap)
+            ax.imshow(n, cmap=cmap)
             overlay_clicks(ant, ax, index=i)
+            ax.axvline(n.shape[0] / 2, color="black", ls="--", alpha=0.5)
+            ax.axhline(n.shape[1] / 2, color="black", ls="--", alpha=0.5)
+            ax.grid(which="major", axis="both", color="white", alpha=0.4)
 
         for i, _ in enumerate(ant.filters.keys()):
             logger.debug(
@@ -733,5 +779,6 @@ class Annotator:
         """
         with open(path, "rb") as infile:
             results = pickle.load(infile)
+            logger.info(f"Loaded {path} as previously pickled annotation set... ")
 
         return cls(som, results=results)
