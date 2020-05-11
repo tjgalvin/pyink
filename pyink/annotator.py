@@ -573,6 +573,10 @@ class Callback:
 
 class Annotator:
     """Class to drive the interactive annotation of SOM neurons
+    
+    TODO: Add a `update_annotated_neuron` function? Although `annotate_neuron`
+          can be called specifically, is this usable if a single neuron is 
+          requested to be updated easily?
     """
 
     def __repr__(self) -> str:
