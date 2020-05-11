@@ -769,16 +769,3 @@ class Annotator:
         with open(path, "wb") as out_file:
             logger.info(f"Saving to {path}")
             pickle.dump(self.results, out_file)
-
-    @classmethod
-    def load(cls, som: Union[str, pu.SOM], path: str):
-        """Load a existing pickled Annotator object
-        
-        Arguments:
-            path {str} -- Path to unpickle
-        """
-        with open(path, "rb") as infile:
-            results = pickle.load(infile)
-            logger.info(f"Loaded {path} as previously pickled annotation set... ")
-
-        return cls(som, results=results)
