@@ -18,6 +18,7 @@ marker_style = ["ro", "g*", "yv"]
 
 logger = logging.getLogger(__name__)
 
+ANT_SUFFIX = "results.pkl"
 # Used to record unqiue combinations of regions
 PRIMES = {
     0: 2,
@@ -761,13 +762,13 @@ class Annotator:
         """Save the Annotator results, which is a Dict, as a pickle file. For the moment
         only the result structure is saved, and not the entire Annotator instance. This is 
         to avoid potentially issues of pickling a memory mapped file (which is the underlying
-        interface around all of the PINK binary file classes)
+        interface around all of the PINK binary file classes).
         
         Keyword Arguments:
             path {str} -- Output path to write to (default: {None})
         """
         if path is None:
-            path = f"{self.som.path}.annotations"
+            path = f"{self.som.path}.{ANT_SUFFIX}"
 
         with open(path, "wb") as out_file:
             logger.info(f"Saving to {path}")
