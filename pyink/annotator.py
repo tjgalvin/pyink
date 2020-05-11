@@ -728,7 +728,9 @@ class Annotator:
             return ant
 
     def interactive_annotate(self):
-        """Interate over neurons in the som and annotate
+        """Interate over the neurons in a SOM and call annotate_neuron. This method
+        manages progressing over all neurons upon the SOM surface and saving their results. 
+        Provided certain user prompts, certain actions are taken. 
         """
 
         neurons: List[tuple] = [k for k in self.som]
