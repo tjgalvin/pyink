@@ -758,7 +758,10 @@ class Annotator:
                 break
 
     def save_annotations(self, path: str = None):
-        """Save the Annotator instance as a pickle file
+        """Save the Annotator results, which is a Dict, as a pickle file. For the moment
+        only the result structure is saved, and not the entire Annotator instance. This is 
+        to avoid potentially issues of pickling a memory mapped file (which is the underlying
+        interface around all of the PINK binary file classes)
         
         Keyword Arguments:
             path {str} -- Output path to write to (default: {None})
