@@ -2,7 +2,7 @@
 """
 from typing import List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
 from collections import defaultdict
-import pickle
+import dill
 import logging
 
 import numpy as np
@@ -621,7 +621,7 @@ class Annotator:
             self.results: Dict[tuple, Annotation] = {}
         elif isinstance(results, str):
             with open(results, "rb") as infile:
-                self.results = pickle.load(infile)
+                self.results = dill.load(infile)
         elif isinstance(results, dict):
             self.results = results
         else:
@@ -780,4 +780,4 @@ class Annotator:
 
         with open(path, "wb") as out_file:
             logger.info(f"Saving to {path}")
-            pickle.dump(self.results, out_file)
+            dill.dump(self.results, out_file)
