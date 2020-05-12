@@ -674,6 +674,24 @@ class Mapping:
 
         return bmu
 
+    def bmu_counts(self) -> np.ndarray:
+        """Return counts of how often a neuron was the best matching unit
+        
+        Returns:
+            np.ndarray -- Counts of how often neuron was the BMU
+        """
+        som_shape = self.data.shape[1:]
+        counts = np.zeros(som_shape)
+        coords = product(*[np.arange(i) for i in som_shape])
+
+        bmu_keys = self.bmu(return_idx=True, squeeze=True)
+        bz, by, bx = bmu_keys.T
+
+        for c in coords:
+            counts[c] = np.sum((by == c[0]) & (bx == c[1]))
+
+        return np.squeeze(counts)
+
 
 class Transform:
     """Class to interact with PINK transformation files
