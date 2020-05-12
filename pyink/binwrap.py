@@ -9,7 +9,18 @@ import sys as sys
 import logging
 import pickle
 from itertools import product
-from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable, Sequence
+from typing import (
+    List,
+    Set,
+    Dict,
+    Tuple,
+    Optional,
+    Union,
+    Any,
+    Generator,
+    Iterable,
+    Sequence,
+)
 
 import numpy as np
 import astropy.units as u
@@ -572,7 +583,7 @@ class Mapping:
             shape=data_shape,
         )
 
-    def __iter__(self):
+    def __iter__(self) -> Generator:
         """Produce a index iterating over the input image axis
         """
         for i in range(self.header[3]):

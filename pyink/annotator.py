@@ -587,10 +587,12 @@ class Annotator:
         """
         s: str = f"Annotated SOM: {self.som.path} \n"
 
-        print("RESULTS: ", self.results)
-
-        no_ant: int = len(self.results.keys())
-        s += f"Annotated {no_ant} \n"
+        try:
+            no_ant: int = len(self.results.keys())
+            s += f"Annotated {no_ant} neurons rescorded \n"
+            s += f"Keys of results: {self.results.keys()}\n"
+        except:
+            s += "No saved annotation\n"
 
         return s
 

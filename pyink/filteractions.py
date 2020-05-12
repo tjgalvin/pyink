@@ -187,7 +187,7 @@ class Filter:
         filter = self.neuron.filters[self.channel]
         center = np.array(filter.shape) / 2
 
-        ra_pix, dec_pix = self.coords.coords["offset-neuron"]
+        ra_pix, dec_pix = self.coords.coords["offsets-neuron"]
 
         # Recall C-style ordering of two-dimensional arrays. Shouldn't matter
         # too much as PINK enforces equal image dimensions for x/y axes
@@ -195,7 +195,7 @@ class Filter:
         self.dec_pix = dec_pix.value + center[0]
 
         # TODO: Consider desired behaviour when it comes to rounding pixel coordinates
-        self.labels = filter[dec_pix.astype(int), ra_pix.astype(int)]
+        self.labels = [self.neuron.labels[i] for i in filter[ra_pix.astype(int), dec_pix.astype(int)]]
 
     def plot(self, fig: plt.Figure = None, ax: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
         """Produce a basic diagnostic plot to examine where coordinates fall one a neuron
@@ -209,11 +209,19 @@ class Filter:
             ax {plt.Axes} -- Axes object used for plotting
         """
         if fig is None:
-            fig = plt.Figure()
+            fig = plt.figure()
         if ax is None:
             ax = fig.add_subplot(111)
         
         ax.imshow(self.neuron.filters[self.channel])
-        ax.plot(self.ra_pix, self.dec_pix)
+        
+        if self.labels is None:
+            ax.plot(self.ra_pix, self.dec_pix, 'ro')
+        else:
+            print(self.labels)
+            for u in np.unique(self.labels):
+                mask = u == self.labels
+                ax.scatter(self.ra_pix[mask], self.dec_pix[mask], label=u)
+                ax.legend()
 
         return fig, ax
