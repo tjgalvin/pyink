@@ -74,7 +74,7 @@ class Annotation:
         self.clicks: Dict[int, list] = defaultdict(list)
 
         self.filters: Dict[int, np.ndarray] = {
-            k: np.zeros_like(self.neuron[k]).astype(np.bool)
+            k: np.zeros_like(self.neuron[k]).astype(np.int)
             for k in np.arange(self.neuron.shape[0])
         }
 

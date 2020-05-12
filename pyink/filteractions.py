@@ -195,8 +195,9 @@ class Filter:
         self.dec_pix = dec_pix.value + center[0]
 
         # TODO: Consider desired behaviour when it comes to rounding pixel coordinates
-        self.labels = [self.neuron.labels[i] for i in filter[ra_pix.astype(int), dec_pix.astype(int)]]
-
+        # TODO: Resolve the index value to the labels
+        self.labels = filter[self.dec_pix.astype(int), self.ra_pix.astype(int)]
+        
     def plot(self, fig: plt.Figure = None, ax: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
         """Produce a basic diagnostic plot to examine where coordinates fall one a neuron
         
@@ -218,7 +219,6 @@ class Filter:
         if self.labels is None:
             ax.plot(self.ra_pix, self.dec_pix, 'ro')
         else:
-            print(self.labels)
             for u in np.unique(self.labels):
                 mask = u == self.labels
                 ax.scatter(self.ra_pix[mask], self.dec_pix[mask], label=u)
