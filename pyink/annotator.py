@@ -50,6 +50,16 @@ class Annotation:
 
     _labels: List[Tuple[str, int]] = []
 
+    def __getstate__(self) -> Dict:
+        """An overloaded version of the pickle get state to save the labels 
+        as instance variables, otherwise they would not be saved
+        
+        Returns:
+            Dict -- instance variables for pickling
+        """
+        self.labels = self._labels
+        return self.__dict__
+
     def __repr__(self) -> str:
         """Neat string representation
         
@@ -781,10 +791,6 @@ class Annotator:
         """
         if path is None:
             path = f"{self.som.path}.{ANT_SUFFIX}"
-
-        logger.debug("Update local instance references of label from class variable")
-        for k, v in self.results.items():
-            self.results[k].labels = self.results[k]._labels
 
         with open(path, "wb") as out_file:
             logger.info(f"Saving to {path}")
