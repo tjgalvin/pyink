@@ -331,14 +331,19 @@ def make_fig1_callbacks(
 
             mask_im = results.filters[0]  # Will always be at least 1 neuron
 
-            mask_ax.clear()  # Clears axes limits
-            mask_ax.imshow(mask_im)
+            for i, _ in enumerate(results.filters.keys()):
+                logger.debug(
+                    f"Loading neuron filter channel {i+1} of {len(results.filters.keys())}"
+                )
+                ax = mask_axes[i]
+                ax.imshow(results.filters[i])
+                overlay_clicks(results, ax, index=i)
 
-            overlay_clicks(results, mask_ax)
-
-            for ax in axes:
-                for line in ax.lines:
-                    line.set_marker(None)
+            # Badddd
+            for axx in [axes, mask_axes]:
+                for ax in axx:
+                    for line in ax.lines:
+                        line.set_marker(None)
 
             fig1.canvas.draw_idle()
 
@@ -645,7 +650,7 @@ class Annotator:
 
         self.save: Union[bool, str, None] = False
         if save == True:
-            self.save = f"{self.som.path}.annotation"
+            self.save = f"{self.som.path}.{ANT_SUFFIX}"
         elif isinstance(save, str):
             self.save = save
 
