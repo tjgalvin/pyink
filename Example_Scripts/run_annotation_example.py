@@ -27,7 +27,7 @@ path = pu.PathHelper("Annotation")
 annotator = pu.Annotator("SOMs/SOM_B3Circular_h8_w8_emu.bin")
 
 annotator.interactive_annotate()
-annotator.save_annotations(path=f"{path}/ANNOTATION_B3Circular_h8_w8_emu.bin")
+annotator.save_annotation_results(path=f"{path}/ANNOTATION_B3Circular_h8_w8_emu.bin")
 
 saved_annotations = pu.Annotator(
     "SOMs/SOM_B3Circular_h8_w8_emu.bin",
