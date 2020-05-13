@@ -18,7 +18,7 @@ marker_style = ["ro", "g*", "yv"]
 
 logger = logging.getLogger(__name__)
 
-ANT_SUFFIX = "results.pkl"
+ANT_SUFFIX = "results.dill"
 # Used to record unqiue combinations of regions
 PRIMES = {
     0: 2,
@@ -48,7 +48,7 @@ class Annotation:
     """Class to retain annotation information applied on neurons
     """
 
-    labels: List[Tuple[str, int]] = []
+    _labels: List[Tuple[str, int]] = []
 
     def __repr__(self) -> str:
         """Neat string representation
@@ -64,6 +64,7 @@ class Annotation:
         Arguments:
             neuron {np.ndarray} -- Image of the neuron of the SOM
         """
+        self.labels: List[Tuple[str, int]] = []  # Updated when pickled from Annotator
         self.neuron: np.ndarray = neuron
         self._init_containters()
 
@@ -513,27 +514,30 @@ def make_box_callbacks(
         if text == "":
             logger.warn(f"Textbox submission is empty. Ignoring. ")
             return
-        if text in [l[0] for l in results.labels]:
+        if text in [l[0] for l in results._labels]:
             logger.warn(f"{text} already added as a label. Ignoring. ")
             return
-        if len(PRIMES.keys()) == len(results.labels):
+        if len(PRIMES.keys()) == len(results._labels):
             logger.info(
-                f"There are already {len(results.labels)}. Not adding any more. "
+                f"There are already {len(results._labels)}. Not adding any more. "
             )
             return
 
-        results.labels.append((text, PRIMES[len(results.labels)]))
+        results._labels.append((text, PRIMES[len(results._labels)]))
         callback.textbox.text = ""
 
         callback.checkbox.ax.clear()
         callback.checkbox = CheckButtons(
-            callback.checkbox.ax, [l[0] for l in results.labels]
+            callback.checkbox.ax, [l[0] for l in results._labels]
         )
         callback.checkbox.on_clicked(checkbox_activations)
 
         callback.textbox.ax.clear()
         callback.textbox = TextBox(callback.textbox.ax, "")
         callback.textbox.on_submit(textbox_submit)
+
+        logger.debug(f"New label added: {text}")
+        logger.debug(f"Label set is: {results._labels}")
 
         fig1.canvas.draw_idle()
 
@@ -692,7 +696,7 @@ class Annotator:
             button_axes = np.array((axes[-1], mask_axes[-1]))
             logger.debug(f"Creating button_axes.")
             fig1_callback.checkbox = CheckButtons(
-                button_axes[0], [l[0] for l in ant.labels], None
+                button_axes[0], [l[0] for l in ant._labels], None
             )
             fig1_callback.textbox = TextBox(button_axes[1], "")
 
@@ -750,7 +754,7 @@ class Annotator:
             )
 
             if self.save is not None:
-                self.save_annotations(path=self.save)
+                self.save_annotation_results(path=self.save)
 
             if callback.next_move == "next":
                 idx += 1
@@ -777,6 +781,10 @@ class Annotator:
         """
         if path is None:
             path = f"{self.som.path}.{ANT_SUFFIX}"
+
+        logger.debug("Update local instance references of label from class variable")
+        for k, v in self.results.items():
+            self.results[k].labels = self.results[k]._labels
 
         with open(path, "wb") as out_file:
             logger.info(f"Saving to {path}")
