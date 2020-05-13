@@ -2,7 +2,7 @@
 """
 from typing import List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
 from collections import defaultdict
-import dill
+import pickle
 import logging
 
 import numpy as np
@@ -18,7 +18,7 @@ marker_style = ["ro", "g*", "yv"]
 
 logger = logging.getLogger(__name__)
 
-ANT_SUFFIX = "results.dill"
+ANT_SUFFIX = "results.pkl"
 # Used to record unqiue combinations of regions
 PRIMES = {
     0: 2,
@@ -625,7 +625,7 @@ class Annotator:
             self.results: Dict[tuple, Annotation] = {}
         elif isinstance(results, str):
             with open(results, "rb") as infile:
-                self.results = dill.load(infile)
+                self.results = pickle.load(infile)
         elif isinstance(results, dict):
             self.results = results
         else:
@@ -788,4 +788,4 @@ class Annotator:
 
         with open(path, "wb") as out_file:
             logger.info(f"Saving to {path}")
-            dill.dump(self.results, out_file)
+            pickle.dump(self.results, out_file)

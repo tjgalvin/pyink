@@ -17,6 +17,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=["dill", "scipy", "numpy", "astropy","scikit-image"],
+    install_requires=["scipy", "numpy", "astropy","scikit-image"],
     python_requires=">=3.6",
 )
