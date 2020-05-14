@@ -1,6 +1,6 @@
 """Classes to assist in the annotation of SOM neurons
 """
-from typing import List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
+from typing import Any, List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
 from collections import defaultdict
 import pickle
 import logging
@@ -51,30 +51,13 @@ class Annotation:
 
     _labels: List[Tuple[str, int]] = []
 
-    def __getstate__(self) -> Dict:
-        """An overloaded version of the pickle get state to save the labels 
-        as instance variables, otherwise they would not be saved
-        
-        Returns:
-            Dict -- instance variables for pickling
-        """
-        self.labels = self._labels
-        return self.__dict__
-
-    def __repr__(self) -> str:
-        """Neat string representation
-        
-        Returns:
-            str -- description for printing
-        """
-        return f"{self.neuron.shape}"
-
     def __init__(self, neuron: np.ndarray):
         """Create an annotation instance to manage neurion
         
-        Arguments:
+        Argumenšs:
             neuron {np.ndarray} -- Image of the neuron of the SOM
         """
+        self.labels: List[Any] = []
         self.neuron: np.ndarray = neuron
         self._init_containters()
 
@@ -92,6 +75,25 @@ class Annotation:
         # recording lasso regions separately just in case in post-processing
         # it is required, something maybe recalculated after
         self.lasso_filters: Dict[int, list] = defaultdict(list)
+
+    def __repr__(self) -> str:
+        """Neat string representation
+        
+        Returns:
+            str -- description for printing
+        """
+        return f"{self.neuron.shape}"
+
+    def __getstate__(self) -> Dict:
+        """An overloaded version of the pickle get state to save the labels 
+        as instance variables, otherwise they would not be saved
+        
+        Returns:
+            Dict -- instance variables for pickling
+        """
+        if len(self.labels) == 0:
+            self.labels = self._labels
+        return self.__dict__
 
     def resolve_label(self, label_value: int) -> Tuple[str, ...]:
         """Given a label integer value, work out the corresponding labels that were activated by the user. 

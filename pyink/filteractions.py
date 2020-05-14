@@ -198,7 +198,7 @@ class Filter:
 
         # TODO: Consider desired behaviour when it comes to rounding pixel coordinates
         # TODO: Resolve the index value to the labels
-        self.labels = filter[self.dec_pix.astype(int), self.ra_pix.astype(int)]
+        self.product_labels = filter[self.dec_pix.astype(int), self.ra_pix.astype(int)]
         
     def plot(self, fig: plt.Figure = None, ax: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
         """Produce a basic diagnostic plot to examine where coordinates fall one a neuron
@@ -218,17 +218,17 @@ class Filter:
         
         ax.imshow(self.neuron.filters[self.channel])
         
-        if self.labels is None:
+        if self.product_labels is None:
             ax.plot(self.ra_pix, self.dec_pix, 'ro')
         else:
-            for u in np.unique(self.labels):
+            for u in np.unique(self.product_labels):
                 try:
                     label = 'Unassigned' if u == 0 else ', '.join(self.neuron.resolve_label(u))
                 except:
                     logger.debug(f"Label resolution failed")
                     label = u
 
-                mask = u == self.labels
+                mask = u == self.product_labels
                 ax.scatter(self.ra_pix[mask], self.dec_pix[mask], label=label)
                 ax.legend()
 
