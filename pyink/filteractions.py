@@ -31,7 +31,7 @@ class CoordinateTransformer:
         transform: Tuple[int, float],
         pixel_scale: Union[None, Angle, Tuple[Angle, Angle]] = u.arcsecond,
         wcs: Union[None, WCS] = None,
-        src_idx: np.ndarray[int] = None
+        src_idx: np.ndarray = None
     ) -> None:
         """Create a new instance of the CoordinateTransformer. Turns positions within
         the sky-reference frame to the neuron-reference frame
