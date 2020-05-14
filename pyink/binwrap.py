@@ -703,6 +703,18 @@ class Mapping:
 
         return np.squeeze(counts)
 
+    def bmu_ed(self) -> np.ndarray:
+        """Returns the similarity measure of the BMU for each source. The BMU will have the smallest
+        similarity measure statistic for each image, so it is straight forward to search for. 
+        
+        Returns:
+            np.ndarray -- The similarity measure statistic of each image to its BMU
+        """
+        data = self.data
+        ed = data.reshape(data.shape[0], -1).min(axis=1)
+
+        return ed
+
 
 class Transform:
     """Class to interact with PINK transformation files
