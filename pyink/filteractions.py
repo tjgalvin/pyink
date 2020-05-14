@@ -220,8 +220,14 @@ class Filter:
             ax.plot(self.ra_pix, self.dec_pix, 'ro')
         else:
             for u in np.unique(self.labels):
+                try:
+                    label = 'Unassigned' if u == 0 else ', '.join(self.neuron.resolve_label(u))
+                except:
+                    logger.debug(f"Label resolution failed")
+                    label = u
+
                 mask = u == self.labels
-                ax.scatter(self.ra_pix[mask], self.dec_pix[mask], label=u)
+                ax.scatter(self.ra_pix[mask], self.dec_pix[mask], label=label)
                 ax.legend()
 
         return fig, ax

@@ -74,7 +74,6 @@ class Annotation:
         Arguments:
             neuron {np.ndarray} -- Image of the neuron of the SOM
         """
-        self.labels: List[Tuple[str, int]] = []  # Updated when pickled from Annotator
         self.neuron: np.ndarray = neuron
         self._init_containters()
 
@@ -800,3 +799,22 @@ class Annotator:
         with open(path, "wb") as out_file:
             logger.info(f"Saving to {path}")
             pickle.dump(self.results, out_file)
+
+    def unique_labels(self) -> List:
+        """Returns a list of the unique labels in the results set
+        
+        Returns:
+            List -- List of unique labels
+        """
+        items: List[str] = []
+        # Because the class variable can't be relied on at the moment, loop over
+        # each Annotation in results, get the labels, move on with life.
+        for annotation in self.results.values():
+            try:
+                labels = annotation.labels
+            except AttributeError:
+                labels = annotation._labels
+
+            items.extend([l[0] for l in labels])
+
+        return list(set(items))
