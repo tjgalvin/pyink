@@ -91,6 +91,11 @@ class Annotation:
         Returns:
             Dict -- instance variables for pickling
         """
+
+        # The only time `self.labels` should be empty is when it is first created and
+        # before it is first pickled. If the below check is not made an instance may only
+        # be pickled once before the attribute value is lost as the __setstate__ does
+        # not try to update the class attribute `_labels`
         if len(self.labels) == 0:
             self.labels = self._labels
         return self.__dict__
