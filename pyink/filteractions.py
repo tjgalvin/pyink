@@ -31,7 +31,7 @@ class CoordinateTransformer:
         transform: Tuple[int, float],
         pixel_scale: Union[None, Angle, Tuple[Angle, Angle]] = u.arcsecond,
         wcs: Union[None, WCS] = None,
-        img_size: Union[None, Tuple[int, int]] = None,
+        src_idx: np.ndarray[int] = None
     ) -> None:
         """Create a new instance of the CoordinateTransformer. Turns positions within
         the sky-reference frame to the neuron-reference frame
@@ -50,11 +50,13 @@ class CoordinateTransformer:
         Keyword Arguments:
             pixel_scale {Union[None,Angle, Tuple[Angle, Angle]]} -- PINK scale of the neuron (default: {1*u.arcsecond})
             wcs {Union[None, WCS]} -- WCS object that corresponds to an image of interest (default: {None})
+            src_idx {np.ndarray[int]} -- Integer IDX (or similar) to uniquely identify objects from the source catalogue (default: {None})
         """
         self.center_coord = center_coord
         self.pixel_scale = pixel_scale
         self.transform = transform
         self.wcs = wcs
+        self.src_idx = src_idx
 
         self.coords: Dict[str, np.ndarray] = {}
         self.coords["sky"] = sky_coords
