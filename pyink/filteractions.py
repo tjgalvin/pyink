@@ -211,7 +211,7 @@ class Filter:
             fig {plt.Figure} -- Figure object used for plotting
             ax {plt.Axes} -- Axes object used for plotting
         """
-        if fig is None:
+        if fig is None and ax is None:
             fig = plt.figure()
         if ax is None:
             ax = fig.add_subplot(111)
