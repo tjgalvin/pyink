@@ -3,6 +3,6 @@ from .utils import pink_spatial_transform, PathHelper
 from .binwrap import *
 from .annotator import Annotation, Annotator
 from .filteractions import CoordinateTransformer, Filter
-from .collation import LabelResolve, Action
+from .collation import LabelResolve, Action, Sorter
 
 __author__ = "Tim Galvin"
