@@ -4,6 +4,7 @@ from typing import List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECK
 from collections import defaultdict
 import pickle
 import logging
+from enum import Enum
 
 import numpy as np
 import matplotlib
@@ -91,37 +92,6 @@ class Annotation:
         # recording lasso regions separately just in case in post-processing
         # it is required, something maybe recalculated after
         self.lasso_filters: Dict[int, list] = defaultdict(list)
-
-    def evaluate_points(self, data: np.ndarray, index: int) -> np.ndarray:
-        """Evaluate whether a set of data points fall withing a filter
-        
-        Arguments:
-            data {np.ndarray} -- Transformed data points
-            index {int} -- Index of filter to compare
-        
-        Returns:
-            np.ndarray -- Boolean array of whether data points fall within a region
-        """
-        raise NotImplementedError(
-            "This is a stub method that may be expanded at a later date."
-        )
-
-    def transform_evaluate_points(
-        self, data: np.ndarray, transform: Tuple[int, float], index: int
-    ) -> np.ndarray:
-        """Transform a set of datapoints and evaluate whether they fall within a filter
-        
-        Arguments:
-            data {np.ndarray} -- data points representing sources in a pixel frame of reference
-            transform {tuple[int, float]} -- transformation to apply to datapoints
-            index {int} -- index of the filter to compare
-        
-        Returns:
-            np.ndarray -- Boolean array of whether data points fall within a region
-        """
-        raise NotImplementedError(
-            "This is a stub method that may be expanded at a later date."
-        )
 
     def resolve_label(self, label_value: int) -> Tuple[str, ...]:
         """Given a label integer value, work out the corresponding labels that were activated by the user. 
@@ -800,13 +770,18 @@ class Annotator:
             logger.info(f"Saving to {path}")
             pickle.dump(self.results, out_file)
 
-    def unique_labels(self) -> List:
+    def unique_labels(
+        self, labels_only: bool = True
+    ) -> List[Union[Tuple[str, int], str]]:
         """Returns a list of the unique labels in the results set
         
+        Keyword Arguments:
+            labels_only {bool} -- When true only the labels are return. Otherwise labels and their unique PRIME are return (default: {False})
+
         Returns:
             List -- List of unique labels
         """
-        items: List[str] = []
+        items: List[Union[Tuple[str, int], str]] = []
         # Because the class variable can't be relied on at the moment, loop over
         # each Annotation in results, get the labels, move on with life.
         for annotation in self.results.values():
@@ -815,6 +790,9 @@ class Annotator:
             except AttributeError:
                 labels = annotation._labels
 
-            items.extend([l[0] for l in labels])
+            if labels_only:
+                labels = [l[0] for l in labels]
+
+            items.extend(labels)
 
         return list(set(items))
