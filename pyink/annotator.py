@@ -109,6 +109,10 @@ class Annotation:
         Returns:
             Tuple[str, ...] -- The string labels corresponding to that label
         """
+        # These should be empty
+        if label_value in [0, 1]:
+            return tuple()
+
         primes = [i for i in PRIMES.values() if label_value % i == 0]
 
         # Reverse the labels so a prime number resolves to a string
