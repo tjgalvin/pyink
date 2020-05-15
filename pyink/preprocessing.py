@@ -91,7 +91,6 @@ def minmax(data: np.ndarray, mask: np.ndarray = None) -> np.ndarray:
         assert (
             data.shape == mask.shape
         ), "Data and Mask arrays must be of the same shape. "
-        data = data[mask]
     else:
         mask = np.ones_like(data, dtype=np.bool)
 
