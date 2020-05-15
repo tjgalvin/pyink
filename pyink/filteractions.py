@@ -201,20 +201,20 @@ class Filter:
         self.product_labels = filter[self.dec_pix.astype(int), self.ra_pix.astype(int)]
         self.coord_labels = list(map(self.neuron.resolve_label, self.product_labels))
 
-    def plot(self, fig: plt.Figure = None, ax: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
+    def plot(self, figure: plt.Figure = None, axes: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
         """Produce a basic diagnostic plot to examine where coordinates fall one a neuron
         
         Keyword Arguments:
-            fig {plt.Figure} -- Figure object to plot onto. Will be created if None (default: {None})
-            ax {plt.Axes} -- Axes object to plot onto. Will be created if None (default: {None})
+            figure {plt.Figure} -- Figure object to plot onto. Will be created if None (default: {None})
+            axes {plt.Axes} -- Axes object to plot onto. Will be created if None (default: {None})
         
         Returns:
             fig {plt.Figure} -- Figure object used for plotting
             ax {plt.Axes} -- Axes object used for plotting
         """
-        if fig is None and ax is None:
+        if figure is None and axes is None:
             fig = plt.figure()
-        if ax is None:
+        if axes is None:
             ax = fig.add_subplot(111)
         
         ax.imshow(self.neuron.filters[self.channel])
