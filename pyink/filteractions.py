@@ -199,7 +199,8 @@ class Filter:
         # TODO: Consider desired behaviour when it comes to rounding pixel coordinates
         # TODO: Resolve the index value to the labels
         self.product_labels = filter[self.dec_pix.astype(int), self.ra_pix.astype(int)]
-        
+        self.coord_labels = list(map(self.neuron.resolve_label, self.product_labels))
+
     def plot(self, fig: plt.Figure = None, ax: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
         """Produce a basic diagnostic plot to examine where coordinates fall one a neuron
         
