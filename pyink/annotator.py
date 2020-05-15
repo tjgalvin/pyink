@@ -47,6 +47,14 @@ PRIMES = {
 
 class Annotation:
     """Class to retain annotation information applied on neurons
+    
+    In the current scheme the filters are all initialised as images with pixel values of zero. 
+    A pixel with a value of zero means there is no corresponding assigned label and it
+    was not selected as a region for annotation. 
+
+    A pixel with a value of one means that the filter was selected as a region but there
+    were no labels in the checkboxes activated. A couple actions could be performed in 
+    such a case, but the one for the moment is to ignore it exists. 
     """
 
     _labels: List[Tuple[str, int]] = []
@@ -100,15 +108,28 @@ class Annotation:
             self.labels = self._labels
         return self.__dict__
 
-    def resolve_label(self, label_value: int) -> Tuple[str, ...]:
+    def resolve_label(self, label_value: int, pedantic: bool = True) -> Tuple[str, ...]:
         """Given a label integer value, work out the corresponding labels that were activated by the user. 
         
+        The current behaviour for a `label_value` of either 0 or 1 is to return and empty tuple. Filters
+        are created with values of 0 (no label exists for an empty/un-defined segmentation) and a value
+        of 1 corresponds to the definition of a segmented region but no activate checkbox. 
+
         Arguments:
             label_value {int} -- Desired label value to look for
         
+        Keyword Arguments:
+            pedantic {bool} -- An extra check to ensure label_value can resolve to a recorded label, which may not happen if a 
+            region was defined without an active checkbox label (default: {True})
+
         Returns:
             Tuple[str, ...] -- The string labels corresponding to that label
         """
+        # TODO: Allow for a default label?
+        if pedantic and label_value == 1:
+            raise ValueError(
+                "A label_value of 1 was encountered, likely meaning the definition of a segmented region without an activate label. "
+            )
         # These should be empty
         if label_value in [0, 1]:
             return tuple()
