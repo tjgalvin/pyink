@@ -44,6 +44,8 @@ PRIMES = {
     19: 71,
 }
 
+# TODO: Consider using a bitmask instead of PRIMES?
+
 
 class Annotation:
     """Class to retain annotation information applied on neurons
