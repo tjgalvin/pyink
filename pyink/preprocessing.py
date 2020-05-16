@@ -91,12 +91,13 @@ def minmax(data: np.ndarray, mask: np.ndarray = None) -> np.ndarray:
         assert (
             data.shape == mask.shape
         ), "Data and Mask arrays must be of the same shape. "
+        d_min = np.nanmin(data[mask])
+        d_max = np.nanmax(data[mask])
     else:
-        mask = np.ones_like(data, dtype=np.bool)
+        d_min = np.nanmin(data)
+        d_max = np.nanmax(data)
 
-    scaled = (data - np.nanmin(data[mask])) / (
-        np.nanmax(data[mask]) - np.nanmin(data[mask])
-    )
+    scaled = (data - d_min) / (d_max - d_min)
 
     return scaled
 
