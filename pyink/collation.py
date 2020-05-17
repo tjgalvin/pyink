@@ -22,6 +22,9 @@ class Action(Enum):
     RESOLVE = auto()
     FLAG = auto()
     PASS = auto()
+    ATTACH = auto()
+    IR_ATTACH = auto()
+    CLASSIFICATION = auto()
 
 
 class LabelResolve(dict):
