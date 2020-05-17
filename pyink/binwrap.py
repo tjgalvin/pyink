@@ -788,3 +788,28 @@ class Transform:
         if self.som_rank == 2:
             return (*self.header[5], 1)
         return self.header[5]
+
+
+class SOMSet:
+    """Container to hold a SOM, Mapping and Transform class instances
+    """
+
+    def __init__(
+        self,
+        som: Union[SOM, str],
+        mapping: Union[Mapping, str],
+        transform: Union[Transform, str],
+    ):
+        """Creates a container to hold a related SOM, Mapping and Transform set together
+        
+        Arguments:
+            som {Union[SOM, str]} -- The desired SOM binary file. If `str` attempt to create a SOM instance
+            mapping {Union[Mapping, str]} -- The desired Mapping binary file. If `str` attempt to create a Mapping instance
+            transform {Union[Transform, str]} -- The desired Transform binary file. If `str` attempt to create a Transform instance
+        """
+        self.som = SOM(som) if isinstance(som, str) else som
+        self.mapping = Mapping(mapping) if isinstance(mapping, str) else mapping
+        self.transform = (
+            Transform(transform) if isinstance(transform, str) else transform
+        )
+
