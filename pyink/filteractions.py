@@ -280,8 +280,6 @@ class FilterSet:
         self.seplimit = seplimit
         self.ct_kwargs = ct_kwargs
 
-        print(self.ct_kwargs)
-
         assert isinstance(match_catalogues, tuple), f"Expect tuple of SkyCoord catalogues, even if only of length 1. Received object of type {type(match_catalogues)}"
         self.match_catalogues = match_catalogues
         self.sky_matches = [search_around_sky(self.base_catalogue, mc, self.seplimit) for mc in self.match_catalogues]
