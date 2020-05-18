@@ -1,4 +1,3 @@
-
 from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable
 from concurrent.futures import ProcessPoolExecutor
 import logging
@@ -14,6 +13,7 @@ from pyink.annotator import Annotation, Annotator
 from pyink import SOMSet
 
 logger = logging.getLogger(__name__)
+
 
 class CoordinateTransformer:
     """Helper class to manage transforming Coordinate positions from 
@@ -33,7 +33,7 @@ class CoordinateTransformer:
         transform: Tuple[int, float],
         pixel_scale: Union[None, Angle, Tuple[Angle, Angle]] = u.arcsecond,
         wcs: Union[None, WCS] = None,
-        src_idx: np.ndarray = None
+        src_idx: np.ndarray = None,
     ) -> None:
         """Create a new instance of the CoordinateTransformer. Turns positions within
         the sky-reference frame to the neuron-reference frame
@@ -157,7 +157,12 @@ class Filter:
     """
 
     def __init__(
-        self, coords: CoordinateTransformer, neuron: Annotation, channel: int = 0, plot: bool=False, data: Any = None
+        self,
+        coords: CoordinateTransformer,
+        neuron: Annotation,
+        channel: int = 0,
+        plot: bool = False,
+        data: Any = None,
     ):
         """Creates a new filter instance to project spatially transformed coordinates onto an annotated neuron
 
@@ -180,7 +185,6 @@ class Filter:
         self.dec_pix: np.ndarray = None
 
         self._evaluate()
-        
 
         if plot:
             self.plot()
@@ -205,7 +209,9 @@ class Filter:
         self.product_labels = filter[self.dec_pix.astype(int), self.ra_pix.astype(int)]
         self.coord_labels = list(map(self.neuron.resolve_label, self.product_labels))
 
-    def plot(self, figure: plt.Figure = None, axes: plt.Axes = None) -> Union[plt.Figure, plt.Axes]:
+    def plot(
+        self, figure: plt.Figure = None, axes: plt.Axes = None
+    ) -> Union[plt.Figure, plt.Axes]:
         """Produce a basic diagnostic plot to examine where coordinates fall one a neuron
         
         Keyword Arguments:
@@ -220,15 +226,19 @@ class Filter:
             fig = plt.figure()
         if axes is None:
             ax = fig.add_subplot(111)
-        
+
         ax.imshow(self.neuron.filters[self.channel])
-        
+
         if self.product_labels is None:
-            ax.plot(self.ra_pix, self.dec_pix, 'ro')
+            ax.plot(self.ra_pix, self.dec_pix, "ro")
         else:
             for u in np.unique(self.product_labels):
                 try:
-                    label = 'Unassigned' if u == 0 else ', '.join(self.neuron.resolve_label(u))
+                    label = (
+                        "Unassigned"
+                        if u == 0
+                        else ", ".join(self.neuron.resolve_label(u))
+                    )
                 except:
                     logger.debug(f"Label resolution failed")
                     label = u
@@ -239,7 +249,7 @@ class Filter:
 
         return fig, ax
 
-    def coord_label_contains(self, label_val: Union[str,int]) -> np.ndarray:
+    def coord_label_contains(self, label_val: Union[str, int]) -> np.ndarray:
         """Examines the labels corresponding to the pixel of the filter each coordinate fell in to
         see if a label value is a component. 
         
@@ -254,13 +264,25 @@ class Filter:
         elif isinstance(label_val, int):
             return self.product_labels % label_val == 0
         else:
-            raise ValueError(f"label_val may be either the string label or numeric value, received type {type(label_val)}")
+            raise ValueError(
+                f"label_val may be either the string label or numeric value, received type {type(label_val)}"
+            )
 
 
 class FilterSet:
     """Object to manage the Filters of many sources across channels
     """
-    def __init__(self, base_catalogue: SkyCoord, match_catalogues: Tuple[SkyCoord,...], annotation: Annotator, som_set: SOMSet, cpu_cores: int= None, seplimit: Angle = 1*u.arcminute, **ct_kwargs):
+
+    def __init__(
+        self,
+        base_catalogue: SkyCoord,
+        match_catalogues: Tuple[SkyCoord, ...],
+        annotation: Annotator,
+        som_set: SOMSet,
+        cpu_cores: int = None,
+        seplimit: Angle = 1 * u.arcminute,
+        **ct_kwargs,
+    ):
         """Create a set of Filters that describe the projection of sources onto their neurons. Other keyword-arguments are passed to `CoordinateTransformer`
         
         Arguments:
@@ -280,13 +302,18 @@ class FilterSet:
         self.seplimit = seplimit
         self.ct_kwargs = ct_kwargs
 
-        assert isinstance(match_catalogues, tuple), f"Expect tuple of SkyCoord catalogues, even if only of length 1. Received object of type {type(match_catalogues)}"
+        assert isinstance(
+            match_catalogues, tuple
+        ), f"Expect tuple of SkyCoord catalogues, even if only of length 1. Received object of type {type(match_catalogues)}"
         self.match_catalogues = match_catalogues
-        self.sky_matches = [search_around_sky(self.base_catalogue, mc, self.seplimit) for mc in self.match_catalogues]
-        
+        self.sky_matches = [
+            search_around_sky(self.base_catalogue, mc, self.seplimit)
+            for mc in self.match_catalogues
+        ]
+
         self.filters = self.project()
 
-    def project_cookie_cutter(self, channel: int, src_idx: int) -> Filter:
+    def cookie_cutter(self, channel: int, src_idx: int) -> Filter:
         """Creates filter for a given subject source and channel
         
         Arguments:
@@ -307,8 +334,16 @@ class FilterSet:
         transform_key = (src_idx, *bmu)
         transform = self.som_set.transform.data[transform_key]
 
-        spatial_transform = CoordinateTransformer(center_pos, sky_catalogue[src_matches], transform,  src_idx = src_matches, **self.ct_kwargs)
-        coord_filter = Filter(spatial_transform, self.annotation.results[tuple(bmu)], channel=channel)
+        spatial_transform = CoordinateTransformer(
+            center_pos,
+            sky_catalogue[src_matches],
+            transform,
+            src_idx=src_matches,
+            **self.ct_kwargs,
+        )
+        coord_filter = Filter(
+            spatial_transform, self.annotation.results[tuple(bmu)], channel=channel
+        )
 
         return coord_filter
 
@@ -320,13 +355,18 @@ class FilterSet:
 
         filters = []
         for c in range(channels):
+
             def map_lamba(src_idx):
-                return self.project_cookie_cutter(c, src_idx)
+                return self.cookie_cutter(c, src_idx)
 
             if not isinstance(self.cpu_cores, int):
-                filters.append( list(map(map_lamba, srcs) ))
+                filters.append(list(map(map_lamba, srcs)))
             else:
                 with ProcessPoolExecutor(max_workers=self.cpu_cores) as executor:
-                    filters.append( executor.map(map_lambda, srcs, chunksize=len(srcs) // self.cpu_cores ) )
+                    filters.append(
+                        executor.map(
+                            map_lambda, srcs, chunksize=len(srcs) // self.cpu_cores
+                        )
+                    )
 
         return filters
