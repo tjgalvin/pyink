@@ -361,29 +361,44 @@ class FilterSet:
         filters = []
         for c in range(channels):
 
-            def map_lamba(src_idx):
+            def map_lambda(src_idx):
+                # Unable to see a way of passing arguments that aren't iterable to `map`
+                # Lets just do a closure around them
+                print(src_idx)
                 return self.cookie_cutter(c, src_idx)
 
             if not isinstance(self.cpu_cores, int):
                 filters.append(
                     list(
                         tqdm.tqdm(
-                            map(map_lamba, srcs),
+                            map(map_lambda, srcs),
                             disable=not self.progress,
                             total=len_base_cata,
                         )
                     )
                 )
             else:
+                raise NotImplementedError(
+                    "Current implementation of multiple CPU cores is not working. Remoce `cpu_cores` argument."
+                )
+
+                # When the below is run it just hangs. Example code that is not in a class suggests this use of list(tqdm(executor.map))
+                # should work. Suspect the problem is the serialisation of the class instance and the corresponding catalogues?
+                # Suggestion would be to make `cookie_cutter` an exposed function that accepts the `annotation` and `som_set` as
+                # arguments (i.e. remove all `self.` in the function) and ammend the `map_lambda` to use this and packed the necessary
+                # attributes as arguements in a closure
                 with ProcessPoolExecutor(max_workers=self.cpu_cores) as executor:
-                    filters.append(
+                    f = list(
                         tqdm.tqdm(
                             executor.map(
-                                map_lambda, srcs, chunksize=len(srcs) // self.cpu_cores
+                                map_lambda,
+                                srcs,
+                                chunksize=4096,  # len(srcs) // self.cpu_cores,
                             ),
                             disable=not self.progress,
                             total=len_base_cata,
                         )
                     )
+                filters.append(f)
 
         return filters
