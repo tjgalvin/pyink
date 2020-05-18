@@ -225,8 +225,12 @@ class Filter:
         """
         if figure is None and axes is None:
             fig = plt.figure()
+        else:
+            fig = None
         if axes is None:
             ax = fig.add_subplot(111)
+        else:
+            ax = axes
 
         ax.imshow(self.neuron.filters[self.channel])
 
@@ -314,6 +318,9 @@ class FilterSet:
             search_around_sky(self.base_catalogue, mc, self.seplimit)
             for mc in self.match_catalogues
         ]
+        logger.debug(
+            f"`search_around_sky` completed, number of matches {[len(sk[0]) for sk in self.sky_matches]}"
+        )
 
         self.filters = self.project()
 
@@ -357,9 +364,12 @@ class FilterSet:
         len_base_cata = len(self.base_catalogue)
         srcs = np.arange(len_base_cata)
         channels = len(self.match_catalogues)
+        logger.debug(f"Projecting across {channels} channel/s")
 
         filters = []
         for c in range(channels):
+
+            logger.debug(f"Creating map_lambda for chanell {c}")
 
             def map_lambda(src_idx):
                 # Unable to see a way of passing arguments that aren't iterable to `map`
@@ -367,6 +377,7 @@ class FilterSet:
                 return self.cookie_cutter(c, src_idx)
 
             if not isinstance(self.cpu_cores, int):
+                logger.debug(f"`cpu_cores` unset, mapping in serial mode. ")
                 filters.append(
                     list(
                         tqdm.tqdm(
@@ -380,7 +391,9 @@ class FilterSet:
                 raise NotImplementedError(
                     "Current implementation of multiple CPU cores is not working. Remove `cpu_cores` argument."
                 )
-
+                logger.debug(
+                    f"`cpu_cores` set to {self.cpu_cores}, attempting parallel mapping mode. "
+                )
                 # When the below is run it just hangs. Example code that is not in a class suggests this use of list(tqdm(executor.map))
                 # should work. Suspect the problem is the serialisation of the class instance and the corresponding catalogues?
                 # Suggestion would be to make `cookie_cutter` an exposed function that accepts the `annotation` and `som_set` as
