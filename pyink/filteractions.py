@@ -379,7 +379,7 @@ class FilterSet:
                 )
             else:
                 raise NotImplementedError(
-                    "Current implementation of multiple CPU cores is not working. Remoce `cpu_cores` argument."
+                    "Current implementation of multiple CPU cores is not working. Remove `cpu_cores` argument."
                 )
 
                 # When the below is run it just hangs. Example code that is not in a class suggests this use of list(tqdm(executor.map))
