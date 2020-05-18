@@ -364,7 +364,6 @@ class FilterSet:
             def map_lambda(src_idx):
                 # Unable to see a way of passing arguments that aren't iterable to `map`
                 # Lets just do a closure around them
-                print(src_idx)
                 return self.cookie_cutter(c, src_idx)
 
             if not isinstance(self.cpu_cores, int):
