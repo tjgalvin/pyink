@@ -2,6 +2,7 @@ from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable
 from concurrent.futures import ProcessPoolExecutor
 import logging
 
+import tqdm
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -281,6 +282,7 @@ class FilterSet:
         som_set: SOMSet,
         cpu_cores: int = None,
         seplimit: Angle = 1 * u.arcminute,
+        progress: bool = False,
         **ct_kwargs,
     ):
         """Create a set of Filters that describe the projection of sources onto their neurons. Other keyword-arguments are passed to `CoordinateTransformer`
@@ -294,12 +296,14 @@ class FilterSet:
         Keyword Arguments:
             cpu_cores {int} -- The number of CPU cores to use while projecting the filters. The default is to use one (and avoid the ProcessPoolExecutor) (default: {None})
             seplimit {Angle} -- Matching area for the `search_around_sky` matcher (defaul: {1*astropy.units.arcminute})
+            progress {bool} -- Enable the `tqdm` progress bar updates (default: {False})
         """
         self.base_catalogue = base_catalogue
         self.annotation = annotation
         self.som_set = som_set
         self.cpu_cores = cpu_cores
         self.seplimit = seplimit
+        self.progress = progress
         self.ct_kwargs = ct_kwargs
 
         assert isinstance(
@@ -350,7 +354,8 @@ class FilterSet:
     def project(self):
         """Apply the cookie-cutter projection onto sources
         """
-        srcs = np.arange(len(self.base_catalogue))
+        len_base_cata = len(self.base_catalogue)
+        srcs = np.arange(len_base_cata)
         channels = len(self.match_catalogues)
 
         filters = []
@@ -360,12 +365,24 @@ class FilterSet:
                 return self.cookie_cutter(c, src_idx)
 
             if not isinstance(self.cpu_cores, int):
-                filters.append(list(map(map_lamba, srcs)))
+                filters.append(
+                    list(
+                        tqdm.tqdm(
+                            map(map_lamba, srcs),
+                            disable=not self.progress,
+                            total=len_base_cata,
+                        )
+                    )
+                )
             else:
                 with ProcessPoolExecutor(max_workers=self.cpu_cores) as executor:
                     filters.append(
-                        executor.map(
-                            map_lambda, srcs, chunksize=len(srcs) // self.cpu_cores
+                        tqdm.tqdm(
+                            executor.map(
+                                map_lambda, srcs, chunksize=len(srcs) // self.cpu_cores
+                            ),
+                            disable=not self.progress,
+                            total=len_base_cata,
                         )
                     )
 
