@@ -49,3 +49,5 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    perform_annotation(args.som, save=args.save)
