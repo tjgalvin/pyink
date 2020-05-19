@@ -1,6 +1,4 @@
 """Simple example driving script to interactively annotate neurons
-
-TODO: Add a argparse interface to make script callable from command line
 """
 import argparse
 
