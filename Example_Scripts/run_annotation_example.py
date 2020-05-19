@@ -2,6 +2,7 @@
 
 TODO: Add a argparse interface to make script callable from command line
 """
+import argparse
 
 import platform
 import logging
@@ -22,15 +23,31 @@ if plat == "Darwin":
 
 import pyink as pu
 
-path = pu.PathHelper("Annotation")
 
-annotator = pu.Annotator("SOMs/SOM_B3Circular_h8_w8_emu.bin")
+def perform_annotation(som: str, save: bool = True):
+    """A simple driver to perform annotation of a `SOM`
 
-annotator.interactive_annotate()
-annotator.save_annotation_results(path=f"{path}/ANNOTATION_B3Circular_h8_w8_emu.bin")
+    Arguments:
+        som {str} -- Path to desired SOM for annotation
 
-saved_annotations = pu.Annotator(
-    "SOMs/SOM_B3Circular_h8_w8_emu.bin",
-    results=f"{path}/ANNOTATION_B3Circular_h8_w8_emu.bin",
-)
-print(saved_annotations.results)
+    Keyword Arguments:
+        save {bool} -- Save the annotations as they are being performed (default: {True})
+    """
+    annotator = pu.Annotator(som, save=save)
+    annotator.interactive_annotate()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Initiate the manual annotation of a SOM"
+    )
+    parser.add_argument("som", help="Path to the desired SOM to annotate")
+    parser.add_argument(
+        "-s",
+        "--save",
+        help="Automatically save the annotations using the default naming scheme (appending `.results.pkl). Default behaviour of the `Annotator` class is to save after each neuron has been annotated. ",
+        default=True,
+        action="store_false",
+    )
+
+    args = parser.parse_args()
