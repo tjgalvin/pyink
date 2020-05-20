@@ -25,6 +25,7 @@ class Action(Enum):
     ATTACH = auto()
     IR_ATTACH = auto()
     CLASSIFICATION = auto()
+    ISOLATE = auto()
 
 
 class LabelResolve(dict):
@@ -70,11 +71,11 @@ class Sorter:
     """Handler to control how objects and their filters are accessed by the greedy graph
     """
 
-    def __init__(self, mapper: pu.Mapping, mode: str = "best_matching_first"):
+    def __init__(self, som_set: pu.SOMSet, mode: str = "best_matching_first"):
         """Creates the Sorter to provide source `Filters` in a specified order
         
         Arguments:
-            mapper {pu.Mapping} -- Euclidean distances of images to a SOM file
+            som_set {pu.SOMSet} -- Container holding the SOM, Mapping and Transform files of interest
         
         Keyword Arguments:
             mode {str} -- Sorting mode operation (default: {'best_matching_first'})
@@ -82,7 +83,7 @@ class Sorter:
         MODES = ["best_matching_first"]
 
         self.mode = mode
-        self.mapper = mapper
+        self.som_set = som_set
 
         self.order: np.ndarray
         if mode == "best_matching_first":
@@ -138,3 +139,30 @@ class Sorter:
             np.ndarray -- subset of `order` specified by the indexing
         """
         return self.order.__getitem__(*args)
+
+    @property
+    def som(self) -> pu.SOM:
+        """Returns the `SOM` from the attached `SOMSet`
+
+        Returns:
+            pu.SOM -- SOM object describing a PINK SOM binary file
+        """
+        return self.som_set.som
+
+    @property
+    def mapper(self) -> pu.Mapping:
+        """Returns the `mapping` from the attached som_set
+
+        Returns:
+            pu.Mapping -- Mapping object describing a PINK mapping binary file
+        """
+        return self.som_set.mapping
+
+    @property
+    def transform(self) -> pu.Transform:
+        """Returns the `Transform` from the attached `SOMSet`
+
+        Returns:
+            pu.Transform -- Transform object describing a PINK transform binary file
+        """
+        return self.som_set.transform
