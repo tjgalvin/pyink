@@ -38,7 +38,7 @@ def update_annotation(som: str, key: Tuple[Any, ...], results: str = None):
     """
     results_path = True if results is None else results
 
-    annotator = pu.Annotator(som, results=results)
+    annotator = pu.Annotator(som, results=results_path)
     annotator.annotate_neuron(key, update=True, labeling=True)
 
     results_path = None if results_path == True else results
