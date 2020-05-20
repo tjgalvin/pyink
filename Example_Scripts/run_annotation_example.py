@@ -1,6 +1,7 @@
 """Simple example driving script to interactively annotate neurons
 """
 import argparse
+from typing import Tuple, Any
 
 import platform
 import logging
@@ -20,6 +21,29 @@ if plat == "Darwin":
     )
 
 import pyink as pu
+
+
+def update_annotation(som: str, key: Tuple[Any, ...], results: str = None):
+    """Load an existing annotation set and update a single neuron. To do this
+    a annotation set has to be loaded. 
+
+    TODO: Build in a custom path for the `results` argument
+
+    Arguments:
+        som {str} -- Path to SOM binary file
+        key {Tuple[Any, ...]} -- Key of the `results` attribute to update
+    
+    Keyword Arguments:
+        results {str} -- Path to existing results Annotator set. Default will atempt to automatically find one. (default: {None})
+    """
+    results_path = True if results is None else results
+
+    annotator = pu.Annotator(som, results=results)
+    annotator.annotate_neuron(key, update=True, labeling=True)
+
+    results_path = None if results_path == True else results
+
+    annotator.save_annotation_results(results_path)
 
 
 def perform_annotation(som: str, save: bool = True):
@@ -47,7 +71,26 @@ if __name__ == "__main__":
         default=True,
         action="store_false",
     )
+    parser.add_argument(
+        "-k",
+        "--key",
+        nargs="+",
+        help="The key of the neuron to update. Following the scheme from `Annotator` this will be converted to a `tuple` with elements of type `int`.",
+    )
+    parser.add_argument(
+        "-r",
+        "--results",
+        default=False,
+        nargs=1,
+        help="The path to a previously saved annotation set. ",
+    )
 
     args = parser.parse_args()
 
-    perform_annotation(args.som, save=args.save)
+    if args.key is None:
+        perform_annotation(args.som, save=args.save)
+
+    else:
+        key = tuple(int(t) for t in args.key)
+        results = args.results[0] if not args.results is False else None
+        update_annotation(args.som, key, results=results)
