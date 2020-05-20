@@ -630,7 +630,7 @@ class Annotator:
             som {Union[str, pu.SOM]} -- SOM file to annotate as a PINK binary
         
         Keyword Arguments:
-            results {Union[str, Dict[tuple, Annotation]]} -- A path to a pickled Annotator object, an existing Dict of appropriate mappings for neurons and their corresponding Annotations. If None a new Dict is created. (default: {None})
+            results {Union[bool, str, Dict[tuple, Annotation]]} -- A path to a pickled Annotator object, an existing Dict of appropriate mappings for neurons and their corresponding Annotations. If None a new Dict is created. If `True` will attempt to load from a default path (SOM path with `.results.pkl`). (default: {None})
             save {Union[bool, str, None]} -- Action to save (default: {True})
         
         Returns:
@@ -646,6 +646,9 @@ class Annotator:
                 self.results = pickle.load(infile)
         elif isinstance(results, dict):
             self.results = results
+        elif self.results == True:
+            with open(f"{self.som.path}.{ANT_SUFFIX}", "rb") as infile:
+                self.results = pickle.load(infile)
         else:
             raise ValueError(
                 f"Expected either a path of a pickled Annotator or a Dict are accepted, got {type(results)}"
@@ -663,6 +666,7 @@ class Annotator:
         return_callback: bool = False,
         cmap: str = "bwr",
         labeling: bool = False,
+        update: bool = False,
     ):
         """Perform the annotation for a specified neuron
         
@@ -676,6 +680,7 @@ class Annotator:
             return_callback {bool} -- return matplotlib action information (default: {False})
             cmap {str} -- colour map style (default: {'bwr'})
             labeling {bool} -- enabling the interactive creation and assignment of labels (default: {False})
+            update {bool} -- automatically save the `Annotation` to the results (default: {False})
 
         Returns:
             [Callback, Annotation] -- matplotlib action information, neuron annotation
@@ -713,8 +718,13 @@ class Annotator:
         if labeling:
             button_axes = np.array((axes[-1], mask_axes[-1]))
             logger.debug(f"Creating button_axes.")
+            try:
+                label_txt = ant.labels
+            except:
+                logger.debug("Loading labels from class attribute")
+                label_txt = ant._labels
             fig1_callback.checkbox = CheckButtons(
-                button_axes[0], [l[0] for l in ant._labels], None
+                button_axes[0], [l[0] for l in label_txt], None
             )
             fig1_callback.textbox = TextBox(button_axes[1], "")
 
@@ -749,6 +759,9 @@ class Annotator:
             overlay_clicks(ant, mask_ax, index=i)
 
         plt.show()
+
+        if update:
+            self.results[key] = ant
 
         if return_callback:
             return fig1_callback, ant
