@@ -143,6 +143,11 @@ class Annotation:
         for l in self.labels:
             lookup[l[1]] = l[0]
 
+        try:
+            return tuple([lookup[p] for p in primes])
+        except:
+            print(primes, label_value)
+            print(self.labels)
         return tuple([lookup[p] for p in primes])
 
 
@@ -646,7 +651,7 @@ class Annotator:
                 self.results = pickle.load(infile)
         elif isinstance(results, dict):
             self.results = results
-        elif self.results == True:
+        elif results == True:
             with open(f"{self.som.path}.{ANT_SUFFIX}", "rb") as infile:
                 self.results = pickle.load(infile)
         else:
@@ -667,6 +672,7 @@ class Annotator:
         cmap: str = "bwr",
         labeling: bool = False,
         update: bool = False,
+        label_txt: List[Tuple[str, int]] = None,
     ):
         """Perform the annotation for a specified neuron
         
@@ -681,6 +687,7 @@ class Annotator:
             cmap {str} -- colour map style (default: {'bwr'})
             labeling {bool} -- enabling the interactive creation and assignment of labels (default: {False})
             update {bool} -- automatically save the `Annotation` to the results (default: {False})
+            label_txt {List[Any]} -- Helper to explicitly set the label set. This is sometimes lost when pickling / unpickling / updating in some edge cases. (default: {None})
 
         Returns:
             [Callback, Annotation] -- matplotlib action information, neuron annotation
@@ -718,11 +725,14 @@ class Annotator:
         if labeling:
             button_axes = np.array((axes[-1], mask_axes[-1]))
             logger.debug(f"Creating button_axes.")
-            try:
-                label_txt = ant.labels
-            except:
-                logger.debug("Loading labels from class attribute")
-                label_txt = ant._labels
+            if label_txt is None:
+                try:
+                    label_txt = ant.labels
+                except:
+                    logger.debug("Loading labels from class attribute")
+                    label_txt = ant._labels
+            else:
+                ant.labels = label_txt
             fig1_callback.checkbox = CheckButtons(
                 button_axes[0], [l[0] for l in label_txt], None
             )
@@ -784,9 +794,6 @@ class Annotator:
                 key, return_callback=True, labeling=True
             )
 
-            if self.save is not None:
-                self.save_annotation_results(path=self.save)
-
             if callback.next_move == "next":
                 idx += 1
                 self.results[key] = ant
@@ -800,6 +807,9 @@ class Annotator:
 
             elif callback.next_move == "quit":
                 break
+
+            if self.save is not None:
+                self.save_annotation_results(path=self.save)
 
     def save_annotation_results(self, path: str = None):
         """Save the Annotator results, which is a Dict, as a pickle file. For the moment
