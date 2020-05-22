@@ -26,6 +26,7 @@ class Action(Enum):
     IR_ATTACH = auto()
     CLASSIFICATION = auto()
     ISOLATE = auto()
+    LABEL = auto()
 
 
 class LabelResolve(dict):
