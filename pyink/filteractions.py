@@ -324,6 +324,25 @@ class FilterSet:
 
         self.filters = self.project()
 
+    def __repr__(self) -> str:
+        """Neat string representation
+
+        Returns:
+            str -- String description
+        """
+        return f"FilterSet: Number of channels {len(self.filters)}, Number of filters {len(self.filters[0])}"
+
+    def __getitem__(self, key) -> List[Filter]:
+        """Returns the requested `key` from the projected filters stored in this FilterSet
+
+        Arguments:
+            key {Any} -- Any indexing method supported by a `List`
+
+        Returns:
+            List[Filter] -- Requested `Filters` across all channels stored
+        """
+        return [f[key] for f in self.filters]
+
     def cookie_cutter(self, channel: int, src_idx: int) -> Filter:
         """Creates filter for a given subject source and channel
         
