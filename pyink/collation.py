@@ -81,6 +81,10 @@ class Sorter:
             mode {str} -- Sorting mode operation (default: {'best_matching_first'})
         """
         MODES = ["best_matching_first"]
+        if mode not in MODES:
+            raise NotImplementedError(
+                f"Support order modes are {', '.join(MODES)}, received {mode}"
+            )
 
         self.mode = mode
         self.som_set = som_set
@@ -88,10 +92,6 @@ class Sorter:
         self.order: np.ndarray
         if mode == "best_matching_first":
             self.order = self._ed_order()
-        else:
-            raise NotImplementedError(
-                f"Support order modes are {', '.join(MODES)}, received {mode}"
-            )
 
     def _ed_order(self) -> np.ndarray:
         """Creates an order from best matching to worst matching based on the similarity of an 
