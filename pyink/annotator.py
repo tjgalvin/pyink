@@ -727,7 +727,7 @@ class Annotator:
             logger.debug(f"Creating button_axes.")
             if label_txt is None:
                 try:
-                    label_txt = ant._labels
+                    label_txt = ant._labels if len(ant._labels) > 0 else ant.labels
                 except:
                     logger.debug("Loading labels from class attribute")
                     label_txt = ant.labels
