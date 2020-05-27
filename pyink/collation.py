@@ -4,9 +4,11 @@
 from typing import List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
 import logging
 from enum import Enum, auto
+from itertools import combinations
 
 import numpy as np
 import networkx as nx
+from tqdm import tqdm
 
 import pyink as pu
 
@@ -22,11 +24,9 @@ class Action(Enum):
     RESOLVE = auto()
     FLAG = auto()
     PASS = auto()
-    ATTACH = auto()
-    IR_ATTACH = auto()
-    CLASSIFICATION = auto()
+    NODE_ATTACH = auto()
+    DATA_ATTACH = auto()
     ISOLATE = auto()
-    LABEL = auto()
 
 
 class LabelResolve(dict):
@@ -167,3 +167,123 @@ class Sorter:
             pu.Transform -- Transform object describing a PINK transform binary file
         """
         return self.som_set.transform
+
+
+# ---------------------------------
+
+
+def greedy_graph(
+    filters: pu.FilterSet,
+    annotations: pu.Annotator,
+    label_resolve: LabelResolve,
+    sorter: Sorter,
+    progress: bool = False,
+) -> nx.MultiGraph:
+    """Creates greedy graph based on configurables based on the exposed utility classes. 
+
+    Arguments:
+        filters {pu.FilterSet} -- Projected cookie-cutter filters containing the segmented catalogue sources
+        annotations {pu.Annotator} -- The labeled filters with regions highlight location and type of features
+        label_resolve {LabelResolve} -- Actions to perform when a label is encountered
+        sorter {Sorter} -- Orders the construction of the greedy graph creation
+
+    keyword Arguments:
+        progress {bool} -- Provide a `tqdm` progress bar (default: {False})
+
+    Returns:
+        nx.MultiGraph -- Link components and information as a `networkx` graph
+    """
+    labels = annotations.unique_labels()
+    G = nx.MultiGraph()
+
+    isolate = []
+
+    for i, src_idx in tqdm(enumerate(sorter), disable=not progress):
+        # Node already added
+        if src_idx in G.nodes():
+            continue
+
+        src_filters = filters[src_idx]
+
+        edge_data = {"count": i}
+        node_link = []
+        node_unlink = []
+
+        for j, src_filter in enumerate(src_filters):
+            for label in labels:
+                action = label_resolve[label]
+                mask = src_filter.coord_label_contains(label)
+
+                if action == pu.Action.NODE_ATTACH:
+                    G.add_nodes_from(
+                        src_filter.coords.src_idx[mask], **{label: True}
+                    )  # If node exists attribute is added
+
+                elif action == pu.Action.DATA_ATTACH:
+                    edge_data[label] = src_filter.coords.src_idx[mask]
+
+                elif action == pu.Action.LINK:
+                    node_link.extend(list(src_filter.coords.src_idx[mask]))
+
+                elif action == pu.Action.UNLINK:
+                    node_unlink.extend(list(src_filter.coords.src_idx[mask]))
+
+                elif action == pu.Action.PASS:
+                    pass
+
+                elif action == pu.Action.ISOLATE:
+                    isolate_idx = list(src_filter.coords.src_idx[mask])
+                    isolate.extend(isolate_idx)
+                    G.remove_edge(G.edges(isolate_idx))
+                    G.add_nodes_from(isolate_idx, {"isolated": label})
+
+        node_link = list(set(node_link) - set(isolate))
+        node_unlink = list(set(node_unlink))
+
+        for idx1, idx2 in combinations(node_link, 2):
+            G.add_edge(idx1, idx2, **edge_data)
+
+        for idx1 in node_unlink:
+            edges = G.edges(idx1)
+            G.remove_edge(edges)
+
+    return G
+
+
+class Grouper:
+    """Class that attempts to implement the `greedy graph`to collate sources together
+    base on the projected cookie-cutter filters. 
+    """
+
+    def __init__(
+        self,
+        filters: pu.FilterSet,
+        annotations: pu.Annotator,
+        label_resolve: LabelResolve,
+        sorter: Sorter,
+    ):
+        """Creates a new `Grouper` object that drives the creation of the greedy graph. 
+        This will attempt to restrict its operation to the provided specialisation classes.
+
+        Arguments:
+            filters {pu.FilterSet} -- The projected cookie-cutter filters
+            annotations {pu.Annotator} -- Provided annotated filters
+            label_resolve {LabelResolve} -- Actions to perform for individual labels
+            sorter {Sorter} -- Specifies the order which the filters are iterated over
+        """
+        self.filters = filters
+        self.annotations = annotations
+        self.label_resolve = label_resolve
+        self.sorter = sorter
+
+        self.graph: nx.MultiGraph = self._generate_graph()
+
+    def _generate_graph(self) -> nx.MultiGraph:
+        """Creates the graph based on specified driver classes
+
+        Returns:
+            nx.MultiGraph -- greedy graph
+        """
+        return greedy_graph(
+            self.filters, self.annotations, self.label_resolve, self.sorter
+        )
