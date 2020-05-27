@@ -282,6 +282,7 @@ class Grouper:
         annotations: pu.Annotator,
         label_resolve: LabelResolve,
         sorter: Sorter,
+        progress: bool = False,
     ):
         """Creates a new `Grouper` object that drives the creation of the greedy graph. 
         This will attempt to restrict its operation to the provided specialisation classes.
@@ -291,11 +292,15 @@ class Grouper:
             annotations {pu.Annotator} -- Provided annotated filters
             label_resolve {LabelResolve} -- Actions to perform for individual labels
             sorter {Sorter} -- Specifies the order which the filters are iterated over
+        
+        Keyword Arguments:
+            progress {bool} -- Provide a `tqdm` style progress bar (default: {False})
         """
         self.filters = filters
         self.annotations = annotations
         self.label_resolve = label_resolve
         self.sorter = sorter
+        self.progress = progress
 
         self.graph: nx.MultiGraph = self._generate_graph()
 
@@ -306,5 +311,9 @@ class Grouper:
             nx.MultiGraph -- greedy graph
         """
         return greedy_graph(
-            self.filters, self.annotations, self.label_resolve, self.sorter
+            self.filters,
+            self.annotations,
+            self.label_resolve,
+            self.sorter,
+            progress=self.progress,
         )
