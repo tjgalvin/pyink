@@ -204,6 +204,8 @@ def greedy_graph(
     Returns:
         nx.MultiGraph -- Link components and information as a `networkx` graph
     """
+    # TODO: Consider removing the `Union` return typing from `unique_labels`
+    # TODO: Will help negate the need of the `isinstance` check below for mypy
     labels = annotations.unique_labels()
     G = nx.MultiGraph()
 
@@ -223,6 +225,7 @@ def greedy_graph(
         for j, src_filter in enumerate(src_filters):
             for label in labels:
                 # Some checks below to help `mypy` while typechecking.
+                # TODO: Consider making the `src_idx` in CoordinateTransfom mandatory
                 if src_filter.coords.src_idx is None:
                     raise ValueError(
                         "`src_idx` not provided for the `CoordinateTransformer`."
