@@ -261,6 +261,12 @@ def greedy_graph(
                     G.remove_edge(G.edges(isolate_idx))
                     G.add_nodes_from(isolate_idx, {"isolated": label})
 
+                elif action == pu.Action.FLAG:
+                    edge_data["Flagged"] = True
+
+                elif action == pu.Action.RESOLVE:
+                    edge_data["Resolve"] = True
+
         node_link = list(set(node_link) - set(isolate))
         node_unlink = list(set(node_unlink))
 
