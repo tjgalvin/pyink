@@ -1,7 +1,18 @@
 """Actions and helpers to build a graph to collate objects
 """
 
-from typing import List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
+from typing import (
+    List,
+    Iterable,
+    Set,
+    Dict,
+    Tuple,
+    Optional,
+    Union,
+    Callable,
+    Any,
+    TYPE_CHECKING,
+)
 import logging
 from enum import Enum, auto
 from itertools import combinations
@@ -45,7 +56,7 @@ class LabelResolve(dict):
         self.default = default
         super().__init__(*args, **kwargs)
 
-    def __getitem__(self, key: str) -> Action:
+    def __getitem__(self, key: Any) -> Action:
         """Resolved the defined label to an action
         
         Arguments:
@@ -205,12 +216,22 @@ def greedy_graph(
 
         src_filters = filters[src_idx]
 
-        edge_data = {"count": i}
+        edge_data: Dict[Any, Any] = {"count": i}
         node_link = []
         node_unlink = []
 
         for j, src_filter in enumerate(src_filters):
             for label in labels:
+                # Some checks below to help `mypy` while typechecking.
+                if src_filter.coords.src_idx is None:
+                    raise ValueError(
+                        "`src_idx` not provided for the `CoordinateTransformer`."
+                    )
+                if not isinstance(label, str):
+                    raise TypeError(
+                        f"`label` should be a `str`, instead got {type(label)}."
+                    )
+
                 action = label_resolve[label]
                 mask = src_filter.coord_label_contains(label)
 
