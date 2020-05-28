@@ -162,6 +162,24 @@ class Annotation:
 
 
 # -------------------------------------
+msg = """Key Actions:
+        q - will quit the application
+        c - clear the state of all masks, including clicked filled regions and lasso regions
+        d - remove the last valid click added across all masks
+        n - move to the next neuron for annotation
+        b - move to the previous neuron for anntoation
+        u - enable or disable the live updating of the island segmentation around click positions (default is enabled)
+        `up` - increase the sigma-clipping threshold by 0.5 sigma (1 sigma = std. dev. of all pixel intensities, default starting value is 2-sigma)
+        `down` - descred the sigma-clipping threshold by 0.5 sigma (1 sigma = std. dev. of all pixel intensities, default starting value is 2-sigma)
+    
+    If `save` is enabled then a save operation will be performed each time a move is made between neurons, or when quiting. 
+    New labels may be added by simply typing a string (that does not correspond to a command) into the text box and pressing enter. 
+    Multiple check boxes may be selected at any one time, and these are recorded correctly in the filters. 
+    Clicking on an island will act as a seed, where after an sigma-threshold clip an island with a seed will be retain.
+    Arbitary regions may be drawn by holding the `right` mouse button while drawning.
+    """
+
+
 def overlay_clicks(results: Annotation, ax: plt.Axes, index: int = None):
     """Plot the markers from an Annotation instance onto the mask axes
     
@@ -546,6 +564,9 @@ def make_box_callbacks(
         logger.debug(f"TextBox submit event captured. Submitted text {text}")
         if text == "":
             logger.warn(f"Textbox submission is empty. Ignoring. ")
+            return
+        if text.upper() == "HELP":
+            print(msg)
             return
         if text in [l[0] for l in results.labels]:
             logger.warn(f"{text} already added as a label. Ignoring. ")
