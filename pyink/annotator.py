@@ -2,6 +2,7 @@
 """
 from typing import Any, List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
 from collections import defaultdict
+
 import pickle
 import logging
 from enum import Enum
@@ -59,7 +60,7 @@ class Annotation:
     such a case, but the one for the moment is to ignore it exists. 
     """
 
-    _labels: List[Tuple[str, int]] = []
+    labels: List[Tuple[str, int]] = []
 
     def __init__(self, neuron: np.ndarray):
         """Create an annotation instance to manage neurion
@@ -67,7 +68,6 @@ class Annotation:
         Argumenšs:
             neuron {np.ndarray} -- Image of the neuron of the SOM
         """
-        self.labels: List[Any] = []
         self.neuron: np.ndarray = neuron
         self._init_containters()
 
@@ -94,21 +94,29 @@ class Annotation:
         """
         return f"{self.neuron.shape}"
 
-    def __getstate__(self) -> Dict:
-        """An overloaded version of the pickle get state to save the labels 
-        as instance variables, otherwise they would not be saved
-        
-        Returns:
-            Dict -- instance variables for pickling
-        """
+    def __getstate__(self) -> dict:
+        """Custom `pickle` serialiser function to ensure the class
+        attribute of Annotation gets properly saved. Since all annotated
+        neurons are read in as a complete set, updating a single neuron
+        at any point should update all instanced on Annotation. 
 
-        # The only time `self.labels` should be empty is when it is first created and
-        # before it is first pickled. If the below check is not made an instance may only
-        # be pickled once before the attribute value is lost as the __setstate__ does
-        # not try to update the class attribute `_labels`
-        if len(self.labels) == 0:
-            self.labels = self._labels
-        return self.__dict__
+        Returns:
+            dict -- State information of Annotation instance
+        """
+        state = self.__dict__.copy()
+        state["labels"] = Annotation.labels
+
+        return state
+
+    def __setstate__(self, state):
+        """Custom `pickle` deserialiser that also updates the Annotation
+        label attribute. 
+
+        Arguments:
+            state {dict} -- State information provided by the `pickle` load
+        """
+        Annotation.labels = state.pop("labels")
+        self.__dict__.update(state)
 
     def resolve_label(self, label_value: int, pedantic: bool = True) -> Tuple[str, ...]:
         """Given a label integer value, work out the corresponding labels that were activated by the user. 
@@ -537,21 +545,21 @@ def make_box_callbacks(
         if text == "":
             logger.warn(f"Textbox submission is empty. Ignoring. ")
             return
-        if text in [l[0] for l in results._labels]:
+        if text in [l[0] for l in results.labels]:
             logger.warn(f"{text} already added as a label. Ignoring. ")
             return
-        if len(PRIMES.keys()) == len(results._labels):
+        if len(PRIMES.keys()) == len(results.labels):
             logger.info(
-                f"There are already {len(results._labels)}. Not adding any more. "
+                f"There are already {len(results.labels)}. Not adding any more. "
             )
             return
 
-        results._labels.append((text, PRIMES[len(results._labels)]))
+        results.labels.append((text, PRIMES[len(results.labels)]))
         callback.textbox.text = ""
 
         callback.checkbox.ax.clear()
         callback.checkbox = CheckButtons(
-            callback.checkbox.ax, [l[0] for l in results._labels]
+            callback.checkbox.ax, [l[0] for l in results.labels]
         )
         callback.checkbox.on_clicked(checkbox_activations)
 
@@ -560,7 +568,7 @@ def make_box_callbacks(
         callback.textbox.on_submit(textbox_submit)
 
         logger.debug(f"New label added: {text}")
-        logger.debug(f"Label set is: {results._labels}")
+        logger.debug(f"Label set is: {results.labels}")
 
         fig1.canvas.draw_idle()
 
@@ -725,14 +733,8 @@ class Annotator:
         if labeling:
             button_axes = np.array((axes[-1], mask_axes[-1]))
             logger.debug(f"Creating button_axes.")
-            if label_txt is None:
-                try:
-                    label_txt = ant._labels if len(ant._labels) > 0 else ant.labels
-                except:
-                    logger.debug("Loading labels from class attribute")
-                    label_txt = ant.labels
-            else:
-                ant.labels = label_txt
+            label_txt = ant.labels
+
             fig1_callback.checkbox = CheckButtons(
                 button_axes[0], [l[0] for l in label_txt], None
             )
@@ -806,6 +808,8 @@ class Annotator:
                     logger.warn("Can't move back. Position zero.")
 
             elif callback.next_move == "quit":
+                if self.save is not None:
+                    self.save_annotation_results(path=self.save)
                 break
 
             if self.save is not None:
@@ -827,9 +831,7 @@ class Annotator:
             logger.info(f"Saving to {path}")
             pickle.dump(self.results, out_file)
 
-    def unique_labels(
-        self, labels_only: bool = True
-    ) -> List[Union[Tuple[str, int], str]]:
+    def unique_labels(self, labels_only: bool = True) -> List[Any]:
         """Returns a list of the unique labels in the results set
         
         Keyword Arguments:
@@ -838,18 +840,16 @@ class Annotator:
         Returns:
             List -- List of unique labels
         """
-        items: List[Union[Tuple[str, int], str]] = []
+        items: List[Any] = []
         # Because the class variable can't be relied on at the moment, loop over
         # each Annotation in results, get the labels, move on with life.
         for annotation in self.results.values():
-            try:
-                labels = annotation.labels
-            except AttributeError:
-                labels = annotation._labels
+            labels = annotation.labels
 
             if labels_only:
-                labels = [l[0] for l in labels]
-
-            items.extend(labels)
+                label_stripped = [l[0] for l in labels]
+                items.extend(label_stripped)
+            else:
+                items.extend(labels)
 
         return list(set(items))
