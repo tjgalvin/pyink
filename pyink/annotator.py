@@ -105,6 +105,7 @@ class Annotation:
         """
         state = self.__dict__.copy()
         state["labels"] = Annotation.labels
+        logger.debug(f"Saved label state information: {state['labels']}")
 
         return state
 
@@ -116,6 +117,7 @@ class Annotation:
             state {dict} -- State information provided by the `pickle` load
         """
         Annotation.labels = state.pop("labels")
+        logger.debug(f"Set label state information: {Annotation.labels}")
         self.__dict__.update(state)
 
     def resolve_label(self, label_value: int, pedantic: bool = True) -> Tuple[str, ...]:
