@@ -11,7 +11,6 @@ from typing import (
     Union,
     Callable,
     Any,
-    TYPE_CHECKING,
 )
 import logging
 from enum import Enum, auto

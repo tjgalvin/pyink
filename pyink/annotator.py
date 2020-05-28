@@ -1,6 +1,6 @@
 """Classes to assist in the annotation of SOM neurons
 """
-from typing import Any, List, Set, Dict, Tuple, Optional, Union, Callable, TYPE_CHECKING
+from typing import Any, List, Set, Dict, Tuple, Optional, Union, Callable
 from collections import defaultdict
 
 import pickle

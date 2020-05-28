@@ -1,7 +1,7 @@
 """Contains basic common utility functions that could foreseeably
 be used outside of pyink
 """
-from typing import List, Set, Dict, Tuple, Optional, Union, Any, TYPE_CHECKING
+from typing import List, Set, Dict, Tuple, Optional, Union, Any
 import logging
 import os
 import shutil
