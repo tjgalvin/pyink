@@ -7,7 +7,7 @@ import platform
 import logging
 
 logger = logging.getLogger("pyink.annotation")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
