@@ -699,7 +699,7 @@ class Annotator:
                 f"Expected either a path of a pickled Annotator or a Dict are accepted, got {type(results)}"
             )
 
-        self.save: Union[bool, str, None] = False
+        self.save: str
         if save == True:
             self.save = f"{self.som.path}.{ANT_SUFFIX}"
         elif isinstance(save, str):
@@ -754,8 +754,8 @@ class Annotator:
 
         # Manually link the axes
         ax_base = axes[0]
-        ax_base.get_shared_x_axes().join(*axes[:-no_label], *mask_axes[:-no_label])
-        ax_base.get_shared_y_axes().join(*axes[:-no_label], *mask_axes[:-no_label])
+        ax_base.get_shared_x_axes().join(*axes[:no_chans], *mask_axes[:no_chans])
+        ax_base.get_shared_y_axes().join(*axes[:no_chans], *mask_axes[:no_chans])
         ax_base.set(title=f"{key}")
 
         logger.debug(f"Axes shape: {axes.shape}")
@@ -770,7 +770,7 @@ class Annotator:
             fig1_callback.checkbox = CheckButtons(
                 button_axes[0], [l[0] for l in label_txt], None
             )
-            fig1_callback.textbox = TextBox(button_axes[1], "")
+            fig1_callback.textbox = TextBox(button_axes[1], "Enter Text Here...")
 
             textbox_submit, checkbox_change = make_box_callbacks(
                 fig1_callback, ant, fig1, button_axes,
@@ -812,13 +812,17 @@ class Annotator:
         else:
             return ant
 
-    def interactive_annotate(self):
+    def interactive_annotate(self, labeling: bool = True):
         """Interate over the neurons in a SOM and call annotate_neuron. This method
         manages progressing over all neurons upon the SOM surface and saving their results. 
         Provided certain user prompts, certain actions are taken. 
+        
+        Arguments:
+            labeling {bool} -- Allow text labels to be added and select through a textbox / checkbox system
         """
 
         neurons: List[tuple] = [k for k in self.som]
+        save_path = self.save if isinstance(self.save, str) else None
 
         print(msg)
 
@@ -827,7 +831,7 @@ class Annotator:
 
             key: tuple = neurons[idx]
             callback, ant = self.annotate_neuron(
-                key, return_callback=True, labeling=True
+                key, return_callback=True, labeling=labeling
             )
 
             if callback.next_move == "next":
@@ -843,11 +847,11 @@ class Annotator:
 
             elif callback.next_move == "quit":
                 if self.save is not None:
-                    self.save_annotation_results(path=self.save)
+                    self.save_annotation_results(path=save_path)
                 break
 
             if self.save is not None:
-                self.save_annotation_results(path=self.save)
+                self.save_annotation_results(path=save_path)
 
     def save_annotation_results(self, path: str = None):
         """Save the Annotator results, which is a Dict, as a pickle file. For the moment
