@@ -153,11 +153,31 @@ class Annotation:
         for l in self.labels:
             lookup[l[1]] = l[0]
 
-        try:
-            return tuple([lookup[p] for p in primes])
-        except:
-            print(primes, label_value)
-            print(self.labels)
+        return tuple([lookup[p] for p in primes])
+
+    def filter_contains(self, channel: int = 0) -> Tuple[str, ...]:
+        """Return the label names encoded in a filter
+
+        Keyword Arguments:
+            channel {int} -- Channel to retrieve labels from (default: {0})
+
+        Returns:
+            List[str] -- List of the labels encoded in the filter
+        """
+        vals = np.unique(self.filters[channel])
+        primes = []
+        for v in vals:
+            for p in PRIMES.values():
+                if p > v:
+                    break
+                elif v not in [0, 1] and v % p == 0:
+                    primes.append(p)
+
+        # Reverse the labels so a prime number resolves to a string
+        lookup: Dict[int, str] = {}
+        for l in self.labels:
+            lookup[l[1]] = l[0]
+
         return tuple([lookup[p] for p in primes])
 
 
