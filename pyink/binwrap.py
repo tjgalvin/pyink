@@ -655,8 +655,8 @@ class Mapping:
     @lru_cache(maxsize=16)
     def bmu(
         self,
-        idx=None,
-        squeeze=True,
+        idx: Union[int, np.ndarray] = None,
+        squeeze: bool = True,
         return_idx: bool = False,
         return_tuples: bool = False,
     ) -> np.ndarray:
@@ -665,7 +665,7 @@ class Mapping:
         a source image
         
         Keyword Arguments:
-            idx {Union[int,np.ndarray[int]]} -- The index / indicies to look at. Will default return all (default: {None})
+            idx {Union[int,np.ndarray]} -- The index / indicies to look at. Will default return all (default: {None})
             squeeze {bool} -- Remove empty axes from the return np.ndarray (default: {True})
             return_idx {bool} -- Include the source index/indices as part of the returned structure (default: {True})
             return_tuples {bool} -- Return as a list of tuples (default: {False})
@@ -727,7 +727,7 @@ class Mapping:
 
         return ed
 
-    def images_with_bmu(self, key) -> np.ndarray:
+    def images_with_bmu(self, key: Tuple[int, ...]) -> np.ndarray:
         """Return the indicies of images that have the `key` as their BMU
 
         Arguments:
