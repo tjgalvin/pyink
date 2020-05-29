@@ -187,6 +187,7 @@ def greedy_graph(
     annotations: pu.Annotator,
     label_resolve: LabelResolve,
     sorter: Sorter,
+    src_stats_fn: Callable = None,
     progress: bool = False,
 ) -> nx.MultiGraph:
     """Creates greedy graph based on configurables based on the exposed utility classes. 
@@ -198,6 +199,12 @@ def greedy_graph(
         sorter {Sorter} -- Orders the construction of the greedy graph creation
 
     keyword Arguments:
+            src_stats_fn {Callable} -- User provided function passed to `greedy_graph`. 
+                                       It should atleast the `src_idx` returned by the 
+                                       `Sorter` class, and should return a `dict` with 
+                                       information to attach to the edge. No additional
+                                       arguments are passed. If some are need a closure
+                                       is recommended. (default: {None})
         progress {bool} -- Provide a `tqdm` progress bar (default: {False})
 
     Returns:
@@ -215,7 +222,10 @@ def greedy_graph(
 
         src_filters = filters[src_idx]
 
-        edge_data: Dict[Any, Any] = {"count": i}
+        edge_data: Dict[Any, Any] = {"count": i, "src_idx": src_idx}
+        if src_stats_fn is not None:
+            edge_data.update(src_stats_fn(src_idx))
+
         node_link = []
         node_unlink = []
 
@@ -284,6 +294,7 @@ class Grouper:
         annotations: pu.Annotator,
         label_resolve: LabelResolve,
         sorter: Sorter,
+        src_stats_fn: Callable = None,
         progress: bool = False,
     ):
         """Creates a new `Grouper` object that drives the creation of the greedy graph. 
@@ -296,6 +307,12 @@ class Grouper:
             sorter {Sorter} -- Specifies the order which the filters are iterated over
         
         Keyword Arguments:
+            src_stats_fn {Callable} -- User provided function passed to `greedy_graph`. 
+                                       It should atleast the `src_idx` returned by the 
+                                       `Sorter` class, and should return a `dict` with 
+                                       information to attach to the edge. No additional
+                                       arguments are passed. If some are need a closure
+                                       is recommended. (default: {None})
             progress {bool} -- Provide a `tqdm` style progress bar (default: {False})
         """
         self.filters = filters
@@ -303,6 +320,7 @@ class Grouper:
         self.label_resolve = label_resolve
         self.sorter = sorter
         self.progress = progress
+        self.src_stats_fn = src_stats_fn
 
         self.graph: nx.MultiGraph = self._generate_graph()
 
@@ -317,5 +335,6 @@ class Grouper:
             self.annotations,
             self.label_resolve,
             self.sorter,
+            src_stats_fn=self.src_stats_fn,
             progress=self.progress,
         )
