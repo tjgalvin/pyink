@@ -189,7 +189,7 @@ class ImageWriter:
                 pickle.dump(self.records, out)
 
 
-def header_offset(path):
+def header_offset(path: str) -> int:
     """Determine the offset required to ignore the header information
     of a PINK binary. The header format spec: lines with a '#' start are
     ignored until a '# END OF HEADER' is found. Only valid at beginning of
@@ -197,6 +197,10 @@ def header_offset(path):
 
     Arguments:
         path {str} -- Path to the pink binary file
+    
+    Returns:
+        {int} -- Byte offset position of where the comment at the beginning of
+                 the header ends
     """
     with open(path, "rb") as fd:
         for line in fd:
@@ -205,14 +209,19 @@ def header_offset(path):
             elif line == b"# END OF HEADER":
                 return fd.tell()
 
+    raise ValueError("Malformed PINK header: Unbroken Comment Section")
 
-def resolve_data_type(dtype):
-    """Stub function to act as a lookup for the datatypes within binaries
-    
-    TODO: Expand this to be loaded as the appropriate datatypes in the binary classes
+
+def resolve_data_type(dtype: Union[int, type]) -> Union[type, int]:
+    """Resolves a requested `int` value to its correspond data type expected by PINK
     
     Arguments:
-        header {tuple} -- Pink file header
+        header {Union[int, type]} -- If `int` resolve to the corresponding data type set by PINK. Otherwise
+                                    assume it is a type to resolve to its corresponding int. 
+    
+    Returns:
+        {type} -- Resolved datatype
+    
     """
     types = {
         0: np.float32,
@@ -228,7 +237,7 @@ def resolve_data_type(dtype):
     }
 
     try:
-        return types[dtype]
+        return types[dtype]  # type: ignore
     except KeyError:
         inverse_types = {v: k for k, v in types.items()}
 
