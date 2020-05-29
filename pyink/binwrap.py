@@ -526,15 +526,24 @@ class SOM:
         )
 
     def __read_header(self):
+        """Function to parse the header of the PINK SOM file
+        """
         with open(self.path, "rb") as of:
             of.seek(self.offset)
 
             header = st.unpack("i" * 5, of.read(4 * 5))
             ver, file_type, dtype, som_layout, som_rank = header
 
+            assert som_rank < 100, f"som_rank of {som_rank}, likely a malformed header?"
+
             som_shape = st.unpack("i" * som_rank, of.read(4 * som_rank))
 
             neuron_layout, neuron_rank = st.unpack("i" * 2, of.read(4 * 2))
+
+            assert (
+                neuron_rank < 100
+            ), f"neuron_rank of {neuron_rank}, likely a malformed header?"
+
             neuron_shape = st.unpack("i" * neuron_rank, of.read(4 * neuron_rank))
 
             header = (
