@@ -95,7 +95,8 @@ class Sorter:
                              presented in the same order that their best matching neuron is in the list. 
                              As a positional argument an `Annotator` object will have to be provided. 
                              This may also accept a keyword argument `channel` as an `int` to select which filter 
-                             channel to use with a default of `0`. 
+                             channel to use with a default of `0`. `sort_srcs` as a `bool` will sort 
+                             the sources matching each neuron from best to worst with a default of `True`.
 
         Arguments:
             som_set {pu.SOMSet} -- Container holding the SOM, Mapping and Transform files of interest
@@ -131,13 +132,19 @@ class Sorter:
         return order
 
     def _largest_order(
-        self, annotations: pu.Annotator, *args, channel: int = 0, **kwargs
+        self,
+        annotations: pu.Annotator,
+        *args,
+        channel: int = 0,
+        sort_srcs: bool = True,
+        **kwargs,
     ) -> np.ndarray:
         """Sorts the annotations by the size of the constructed filters, where size is determined
         by the largest separation between any two non-zero pixels. 
 
         Keyword Arguments:
             channel {int} -- The channel filter to operate over (default: {0})
+            sort_srcs {bool} -- Sort the sources that match each BMU from best to worst (default: {True})
 
         Returns:
             np.ndarray -- source indicies belonging to the neurons in the sorted order
@@ -153,8 +160,12 @@ class Sorter:
         for ant in ants:
             key = ant[0]
             src_idx = self.mapper.images_with_bmu(key)
-            src_ed = self.mapper.bmu_ed()[src_idx]
-            src_order = np.argsort(src_ed)
+            if sort_srcs:
+                src_ed = self.mapper.bmu_ed()[src_idx]
+                src_order = np.argsort(src_ed)
+            else:
+                src_order = np.arange(src_idx.shape[0])
+
             order.extend(src_idx[src_order])
 
         return order
