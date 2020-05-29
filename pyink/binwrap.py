@@ -617,6 +617,8 @@ class Mapping:
             header = st.unpack("i" * 6, of.read(4 * 6))
             ver, file_type, dtype, no_imgs, som_layout, som_rank = header
 
+            assert som_rank < 100, f"som_rank of {som_rank}, likely a malformed header?"
+
             som_shape = st.unpack("i" * som_rank, of.read(4 * som_rank))
 
             self.data_start = of.tell()
@@ -802,6 +804,8 @@ class Transform:
 
             header = st.unpack("i" * 5, of.read(4 * 5))
             ver, file_type, no_imgs, som_layout, som_rank = header
+
+            assert som_rank < 100, f"som_rank of {som_rank}, likely a malformed header?"
 
             som_shape = st.unpack("i" * som_rank, of.read(4 * som_rank))
 
