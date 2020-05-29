@@ -82,16 +82,28 @@ class Sorter:
     """Handler to control how objects and their filters are accessed by the greedy graph
     """
 
-    def __init__(self, som_set: pu.SOMSet, mode: str = "best_matching_first"):
-        """Creates the Sorter to provide source `Filters` in a specified order
-        
+    def __init__(
+        self, som_set: pu.SOMSet, *args, mode: str = "best_matching_first", **kwargs
+    ):
+        """Creates the Sorter to provide source `Filters` in a specified order. Any 
+        `args` or `kwargs` are passed through to the corresponding ordering tools. 
+
+        Available `modes` are:
+            best_matching_first -- Orders sources based on their similarity to their BMU, from best to worst
+            largest_first -- Will sort neurons based on the spatial size of the filters, where size 
+                             is the maximum distance between any two non-zero pixels. Sources will be 
+                             presented in the same order that their best matching neuron is in the list. 
+                             As a positional argument an `Annotator` object will have to be provided. 
+                             This may also accept a keyword argument `channel` as an `int` to select which filter 
+                             channel to use with a default of `0`. 
+
         Arguments:
             som_set {pu.SOMSet} -- Container holding the SOM, Mapping and Transform files of interest
         
         Keyword Arguments:
             mode {str} -- Sorting mode operation (default: {'best_matching_first'})
         """
-        MODES = ["best_matching_first"]
+        MODES = ["best_matching_first", "largest_first"]
         if mode not in MODES:
             raise NotImplementedError(
                 f"Support order modes are {', '.join(MODES)}, received {mode}"
@@ -103,6 +115,8 @@ class Sorter:
         self.order: np.ndarray
         if mode == "best_matching_first":
             self.order = self._ed_order()
+        if mode == "largest_first":
+            self.order = self._largest_order(*args, **kwargs)
 
     def _ed_order(self) -> np.ndarray:
         """Creates an order from best matching to worst matching based on the similarity of an 
@@ -113,6 +127,35 @@ class Sorter:
         """
         ed = self.mapper.bmu_ed()
         order = np.argsort(ed)
+
+        return order
+
+    def _largest_order(
+        self, annotations: pu.Annotator, *args, channel: int = 0, **kwargs
+    ) -> np.ndarray:
+        """Sorts the annotations by the size of the constructed filters, where size is determined
+        by the largest separation between any two non-zero pixels. 
+
+        Keyword Arguments:
+            channel {int} -- The channel filter to operate over (default: {0})
+
+        Returns:
+            np.ndarray -- source indicies belonging to the neurons in the sorted order
+        """
+        ants = [(k, v.filters[channel]) for k, v in annotations.results.items()]
+        ants = sorted(
+            ants,
+            key=lambda x: pu.distances_between_valid_pixels(x[1] != 0)[0],
+            reverse=True,
+        )
+
+        order = []
+        for ant in ants:
+            key = ant[0]
+            src_idx = self.mapper.images_with_bmu(key)
+            src_ed = self.mapper.bmu_ed()[src_idx]
+            src_order = np.argsort(src_ed)
+            order.extend(src_idx[src_order])
 
         return order
 

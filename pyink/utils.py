@@ -8,6 +8,7 @@ import shutil
 
 import numpy as np
 from scipy.ndimage import rotate
+from scipy.spatial.distance import cdist
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,41 @@ def pink_spatial_transform(
         raise ValueError(
             f"Image to transform must be either of shape (channel, height, width) or (height, width). Got image of shape {img.shape}"
         )
+
+
+def compute_distances_between_valid_pixels(mask: np.ndarray) -> np.ndarray:
+    """Given a mask, compute the distance between each pixel in a pair-wise fashion
+
+    Arguments:
+        mask {np.ndarray} -- Mask to compute distances between
+
+    Returns:
+        np.ndarray -- Matrix object of distances between pixels, see the return of `scipy.spatial.distance.cdist`
+    """
+    pos = np.argwhere(mask)
+
+    return cdist(pos, pos)
+
+
+def distances_between_valid_pixels(
+    mask: np.ndarray,
+) -> Tuple[float, np.ndarray, np.ndarray]:
+    """Given a mask, compute the distances between all valid pixels and return the
+    maximum separation between any two pixels, which pixels these were, the actual
+    distances between each pair-wise combination of valid pixels. 
+
+    Arguments:
+        mask {np.ndarray} -- a two-dimenaional boolean array
+
+    Returns:
+        Tuple[float, np.ndarray, np.ndarray] -- maximum separation between any two pixels,
+                                                which pixels these were, and distance matrix
+    """
+    dist = compute_distances_between_valid_pixels(mask)
+    max_dist = np.max(dist)
+    max_pos = np.unravel_index(np.argmax(dist), dist.shape)
+
+    return (max_dist, max_pos, dist)
 
 
 class PathHelper:

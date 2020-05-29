@@ -9,6 +9,7 @@ import sys as sys
 import logging
 import pickle
 from itertools import product
+from functools import lru_cache
 from typing import (
     List,
     Set,
@@ -642,6 +643,7 @@ class Mapping:
         """
         return np.arange(self.data.shape[0]).astype(np.int)
 
+    @lru_cache(maxsize=16)
     def bmu(
         self,
         idx=None,
@@ -703,7 +705,8 @@ class Mapping:
 
         return np.squeeze(counts)
 
-    def bmu_ed(self) -> np.ndarray:
+    @lru_cache(maxsize=16)
+    def bmu_ed(self, idx: Union[int, np.ndarray]) -> np.ndarray:
         """Returns the similarity measure of the BMU for each source. The BMU will have the smallest
         similarity measure statistic for each image, so it is straight forward to search for. 
         
@@ -714,6 +717,25 @@ class Mapping:
         ed = data.reshape(data.shape[0], -1).min(axis=1)
 
         return ed
+
+    def images_with_bmu(self, key) -> np.ndarray:
+        """Return the indicies of images that have the `key` as their BMU
+
+        Arguments:
+            key {Tuple[int, ...]} -- Key of the neuron to search for
+
+        Returns:
+            np.ndarray -- Source indicies that have `key` as their BMU
+        """
+        bmu = self.bmu()
+
+        # Create a mask for each axis
+        mask = np.array([k == bmu[:, i] for i, k in enumerate(key)])
+
+        # A match is when it is True across al dimensions for a single index
+        mask = np.all(mask, axis=0)
+
+        return np.squeeze(np.argwhere(mask))
 
 
 class Transform:
@@ -812,4 +834,3 @@ class SOMSet:
         self.transform = (
             Transform(transform) if isinstance(transform, str) else transform
         )
-
