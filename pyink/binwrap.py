@@ -633,6 +633,20 @@ class Mapping:
             )
             self.dtype = resolve_data_type(dtype)
 
+    def __read_data_indicies(self, idx: Union[int, np.ndarray]) -> np.ndarray:
+        """A helper function to provide a common interface to accessing data
+
+        Keyword Arguments:
+            idxs {Union[int, np.ndarray]} -- Desired indicies to obtain data from )default: {None})
+
+        Returns:
+            np.ndarray -- Returned slices for the prodived indicies
+        """
+        if np.issubdtype(type(idx), np.integer):
+            idx = np.array([idx])
+
+        return self.data if idx is None else self.data[idx]
+
     @property
     def som_rank(self) -> int:
         """The number of dimensions of the SOM lattice
@@ -684,10 +698,7 @@ class Mapping:
         Returns:
             np.ndarray -- Indices to the BMU on the SOM lattice of each source image
         """
-        if np.issubdtype(type(idx), np.integer):
-            idx = np.array([idx])
-
-        data = self.data if idx is None else self.data[idx]
+        data = self.__read_data_indicies(idx)
 
         bmu = np.array(
             np.unravel_index(
@@ -726,14 +737,18 @@ class Mapping:
         return np.squeeze(counts)
 
     @lru_cache(maxsize=16)
-    def bmu_ed(self, idx: Union[int, np.ndarray]) -> np.ndarray:
+    def bmu_ed(self, idx: Union[int, np.ndarray] = None) -> np.ndarray:
         """Returns the similarity measure of the BMU for each source. The BMU will have the smallest
         similarity measure statistic for each image, so it is straight forward to search for. 
         
+        Keyword Arguments:
+            idx {Union[int, np.ndarray]} -- Indices of the images to pull information from
+
         Returns:
             np.ndarray -- The similarity measure statistic of each image to its BMU
         """
-        data = self.data
+        data = self.__read_data_indicies(idx)
+
         ed = data.reshape(data.shape[0], -1).min(axis=1)
 
         return ed
