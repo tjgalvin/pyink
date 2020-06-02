@@ -205,6 +205,16 @@ class Sorter:
         """
         return self.order.__getitem__(*args)
 
+    def __repr__(self) -> str:
+        """Neat string representation of the sorter object
+
+        Returns:
+            str -- description string to print
+        """
+        return (
+            f"`Sorter` with mode `{self.mode}` containing `{len(self.order)}` objects."
+        )
+
     @property
     def som(self) -> pu.SOM:
         """Returns the `SOM` from the attached `SOMSet`
