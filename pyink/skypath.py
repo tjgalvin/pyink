@@ -197,7 +197,7 @@ class SkyPath:
             ax {plt.axes} -- axes object to plot onto
         """
         path = self.shortest_path_positions
-        return ax.scatter(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
+        return ax.plot(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
 
     def plot_maximum_distance(self, ax: plt.axes, *args, **kwargs):
         """Overlay the maximum distance between two points onto an existing axes, one with a world coordinate system included as the projection. All
@@ -206,5 +206,5 @@ class SkyPath:
         Arguments:
             ax {plt.axes} -- axes object to plot onto
         """
-        path = self.maximum_distance_positions[0]
-        return ax.scatter(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
+        path = self.maximum_distance_positions
+        return ax.plot(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
