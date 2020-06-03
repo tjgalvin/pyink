@@ -176,7 +176,7 @@ class SkyPath:
         Returns:
             SkyCoord -- sorted on sky positions to produce the smallest path length
         """
-        path = self.shortest_path[0]
+        path = np.array(self.shortest_path[0])
         return self.positions[path]
 
     @property
@@ -186,7 +186,7 @@ class SkyPath:
         Returns:
             SkyCoord -- pair of sky positions
         """
-        max_dist = self.maximum_distance[0]
+        max_dist = np.array(self.maximum_distance[0])
         return self.positions[max_dist]
 
     def plot_shortest_path(self, ax: plt.axes, *args, **kwargs):
@@ -206,5 +206,5 @@ class SkyPath:
         Arguments:
             ax {plt.axes} -- axes object to plot onto
         """
-        path = self.maximum_distance_positions
+        path = self.maximum_distance_positions[0]
         return ax.scatter(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
