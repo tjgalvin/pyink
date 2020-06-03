@@ -11,12 +11,14 @@ from typing import (
     Any,
 )
 import logging
+import warnings
 from itertools import combinations, permutations
 
 import numpy as np
 import astropy.units as u
 from tqdm import tqdm
 from astropy.coordinates import SkyCoord, Angle
+import matplotlib.pyplot as plt
 
 import pyink as pu
 
@@ -66,6 +68,7 @@ def shortest_path_between(
         enumerate(permutations(path_idxs, len(path_idxs))), disable=not progress
     ):
         if i > max_iterations:
+            warnings.warn(f"Maximum iterations of {max_iterations} while searching for the best path. ")
             break
 
         total_path = [start_end[0]] + list(sub_path) + [start_end[1]]
@@ -165,3 +168,43 @@ class SkyPath:
             self.curliness = (
                 self.shortest_path[1] / self.maximum_distance[1]
             ).decompose()
+
+    @property
+    def shortest_path_positions(self) -> SkyCoord:
+        """Returns the on-sky positions in the shortest path order determined
+
+        Returns:
+            SkyCoord -- sorted on sky positions to produce the smallest path length
+        """
+        path = self.shortest_path[0]
+        return self.positions[path]
+
+    @property
+    def maximum_distance_positions(self) -> SkyCoord:
+        """Returns the pair of sources from `positions` with the largest angular separation
+
+        Returns:
+            SkyCoord -- pair of sky positions
+        """
+        max_dist = self.maximum_distance[0]
+        return self.positions[max_dist]
+
+    def plot_shortest_path(self, ax: plt.axes, *args, **kwargs):
+        """Overlay the shortest path onto an existing axes, one with a world coordinate system included as the projection. All
+        `*args` and `**kwargs` are passed onto `matplotlib.pyplot.scatter`.
+
+        Arguments:
+            ax {plt.axes} -- axes object to plot onto
+        """
+        path = self.shortest_path_positions
+        return ax.scatter(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
+
+    def plot_maximum_distance(self, ax: plt.axes, *args, **kwargs):
+        """Overlay the maximum distance between two points onto an existing axes, one with a world coordinate system included as the projection. All
+        `*args` and `**kwargs` are passed onto `matplotlib.pyplot.scatter`.
+
+        Arguments:
+            ax {plt.axes} -- axes object to plot onto
+        """
+        path = self.maximum_distance_positions
+        return ax.scatter(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
