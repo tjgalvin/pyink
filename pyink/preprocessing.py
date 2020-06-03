@@ -17,6 +17,7 @@ def rms_estimate(
     clip_rounds: int = 2,
     bin_perc: float = 0.25,
     outlier_thres: float = 3.0,
+    nan_check: bool = True,
 ) -> float:
     """Calculates to RMS of an image, primiarily for radio interferometric images. First outlying
     pixels will be flagged. To the remaining valid pixels a Guassian distribution is fitted to the
@@ -30,6 +31,7 @@ def rms_estimate(
         clip_rounds {int} -- Number of times to perform the clipping of outlying pixels (default: {2})
         bin_perc {float} -- Bins need to have `bin_perc*MAX(BINS)` of counts to be included in the fitting procedure (default: {0.25})
         outlier_thres {float} -- Number of units of the adopted outlier statistic required for a item to be considered an outlier (default: {3})
+        nan_check {bool} -- If true, non-finite values will be removed from the `data` which would otherwise cause the rms derivation to fail. If fail `data` remains untouched (default: {True})
 
     Raises:
         ValueError: Raised if a mode is specified but not supported
@@ -48,6 +50,9 @@ def rms_estimate(
 
     else:
         raise ValueError(f"{mode} not supported as a clipping mode. ")
+
+    if nan_check:
+        data = data[~np.isfinite(data)]
 
     for i in range(clip_rounds):
         data = data[np.abs(data) < outlier_thres * clipping_func(data)]
