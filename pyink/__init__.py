@@ -8,6 +8,16 @@ from .utils import (
 from .binwrap import *
 from .annotator import Annotation, Annotator, ANT_SUFFIX
 from .filteractions import CoordinateTransformer, Filter, FilterSet
-from .collation import LabelResolve, Action, Sorter, Grouper, greedy_graph
+from .collation import (
+    LabelResolve,
+    Action,
+    Sorter,
+    Grouper,
+    SkyPath,
+    greedy_graph,
+    create_separation_set,
+    maximum_distance,
+    shortest_path_between,
+)
 
 __author__ = "Tim Galvin"
