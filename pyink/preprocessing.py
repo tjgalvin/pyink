@@ -54,7 +54,7 @@ def rms_estimate(
         )
 
     if nan_check:
-        data = data[~np.isfinite(data)]
+        data = data[np.isfinite(data)]
 
     for i in range(clip_rounds):
         data = data[np.abs(data) < outlier_thres * clipping_func(data)]
