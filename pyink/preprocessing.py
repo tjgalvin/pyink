@@ -49,7 +49,9 @@ def rms_estimate(
         clipping_func = lambda data: np.median(np.abs(data - np.median(data)))
 
     else:
-        raise ValueError(f"{mode} not supported as a clipping mode. ")
+        raise ValueError(
+            f"{mode} not supported as a clipping mode, available modes are `std` and `mad`. "
+        )
 
     if nan_check:
         data = data[~np.isfinite(data)]

@@ -790,7 +790,7 @@ class Annotator:
             fig1_callback.checkbox = CheckButtons(
                 button_axes[0], [l[0] for l in label_txt], None
             )
-            fig1_callback.textbox = TextBox(button_axes[1], "Enter Text Here...")
+            fig1_callback.textbox = TextBox(button_axes[1], "")
 
             textbox_submit, checkbox_change = make_box_callbacks(
                 fig1_callback, ant, fig1, button_axes,
