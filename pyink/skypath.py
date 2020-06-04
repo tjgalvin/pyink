@@ -41,8 +41,9 @@ def shortest_path_between(
         start_end {Tuple[int,int]} -- Indicies of the positions to start and end on
 
     Keyword Arguments:
-        max_iterations {int} -- The maximum number of path evaluations to ensure that finishes in a timely manner. 
-                                The result returned will (likely) be sub-optimal (default :{int})
+        max_iterations {int} -- The maximum number of path evaluations to ensure that the search finishes in a timely manner. 
+                                The result returned will (likely) be sub-optimal, but with enough iterations probably sufficent
+                                for most uses (default :{int})
         progress {bool} -- Enable the `tqdm` progress bar (default: {2000000})
 
     Returns:
@@ -197,7 +198,10 @@ class SkyPath:
             ax {plt.axes} -- axes object to plot onto
         """
         path = self.shortest_path_positions
-        return ax.plot(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
+        if len(path) <=2:
+            return
+        else:
+            return ax.plot(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
 
     def plot_maximum_distance(self, ax: plt.axes, *args, **kwargs):
         """Overlay the maximum distance between two points onto an existing axes, one with a world coordinate system included as the projection. All
@@ -207,4 +211,7 @@ class SkyPath:
             ax {plt.axes} -- axes object to plot onto
         """
         path = self.maximum_distance_positions
-        return ax.plot(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
+        if len(path) <= 2:
+            return
+        else:
+            return ax.plot(path.ra, path.dec, *args, transform=ax.get_transform('world'), **kwargs)
