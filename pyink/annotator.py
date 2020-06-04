@@ -893,7 +893,7 @@ class Annotator:
         """Returns a list of the unique labels in the results set
         
         Keyword Arguments:
-            labels_only {bool} -- When true only the labels are return. Otherwise labels and their unique PRIME are return (default: {False})
+            labels_only {bool} -- When true only the labels are return. Otherwise labels and their unique PRIME are return (default: {True})
 
         Returns:
             List -- List of unique labels
