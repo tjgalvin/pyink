@@ -99,6 +99,13 @@ class Sorter:
                              This may also accept a keyword argument `channel` as an `int` to select which filter 
                              channel to use with a default of `0`. `sort_srcs` as a `bool` will sort 
                              the sources matching each neuron from best to worst with a default of `True`.
+            area_ratio -- Will sort neurons based on the ratio of valid pixels between two filters. 
+                          As a positional argument an `Annotator` object will have to be provided. `filter1`
+                          and `filter2` set the channels to draw the filters from. `filter_includes` and `filter_excludes`
+                          may be either an `int` or `Iterable[int]` that will build a mask based on the 
+                          presence of those labels. If `filter_includes` is `None` all non-zero pixels are 
+                          considered valid. `sort_srcs` as a `bool` will sort the sources matching each 
+                          neuron from best to worst with a default of `True`. See `pu.valid_region`.
 
         Arguments:
             som_set {pu.SOMSet} -- Container holding the SOM, Mapping and Transform files of interest
