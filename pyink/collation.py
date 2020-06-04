@@ -106,7 +106,7 @@ class Sorter:
         Keyword Arguments:
             mode {str} -- Sorting mode operation (default: {'best_matching_first'})
         """
-        MODES = ["best_matching_first", "largest_first"]
+        MODES = ["best_matching_first", "largest_first", "area_ratio"]
         if mode not in MODES:
             raise NotImplementedError(
                 f"Support order modes are {', '.join(MODES)}, received {mode}"
@@ -118,8 +118,10 @@ class Sorter:
         self.order: np.ndarray
         if mode == "best_matching_first":
             self.order = self._ed_order()
-        if mode == "largest_first":
+        elif mode == "largest_first":
             self.order = self._largest_order(*args, **kwargs)
+        elif mode == "area_ratio":
+            self.order = self._area_ratio(*args, **kwargs)
 
     def _ed_order(self) -> np.ndarray:
         """Creates an order from best matching to worst matching based on the similarity of an 
@@ -144,6 +146,9 @@ class Sorter:
         """Sorts the annotations by the size of the constructed filters, where size is determined
         by the largest separation between any two non-zero pixels. 
 
+        Arguments:
+            annotations {pu.Annotator} -- An annotated SOM described in an `Annotator` object
+
         Keyword Arguments:
             channel {int} -- The channel filter to operate over (default: {0})
             sort_srcs {bool} -- Sort the sources that match each BMU from best to worst (default: {True})
@@ -158,6 +163,63 @@ class Sorter:
             reverse=True,
         )
 
+        order = []
+        for ant in ants:
+            key = ant[0]
+            src_idx = self.mapper.images_with_bmu(key)
+            if sort_srcs:
+                src_ed = self.mapper.bmu_ed()[src_idx]
+                src_order = np.argsort(src_ed)
+            else:
+                src_order = np.arange(src_idx.shape[0])
+
+            order.extend(src_idx[src_order])
+
+        return order
+
+    def _area_ratio(
+        self,
+        annotations: pu.Annotator,
+        *args,
+        filter1=0,
+        filter2=1,
+        filter_includes=None,
+        filter_excludes=None,
+        sort_srcs: bool = True,
+        **kwargs,
+    ) -> np.ndarray:
+        """Compute the order of the filters by the relative ratio between desired regions in each filter. 
+
+        Arguments:
+            annotations {pu.Annotator} -- An annotated SOM described in an `Annotator` object
+            
+        Keyword Arguments:
+            filter1 {int} -- Desired filter 1 (default: {0})
+            filter2 {int} -- Desired filter 2 (default: {1})
+            filter_includes {Union[int, Iterable[int]]} -- Labels to include in the masked region (default: {None})
+            filter_excludes {Union[int, Iterable[int]]} -- Labels to exclude from the region (default: {None})
+            sort_srcs {bool} -- Sort the sources that match each BMU from best to worst (default: {True})
+
+        Returns:
+            np.ndarray -- source indicies in sorted order
+        """
+        ants = [
+            (k, v.filters[filter1], v.filters[filter2])
+            for k, v in annotations.results.items()
+        ]
+        ants = sorted(
+            ants,
+            key=lambda x: pu.area_ratio(
+                x[1],
+                x[2],
+                filter_includes=filter_includes,
+                filter_excludes=filter_excludes,
+            ),
+            reverse=True,
+        )
+
+        # TODO: Move this to a unified function to be used in common with
+        # TODO: the same sorting in _largest_order
         order = []
         for ant in ants:
             key = ant[0]
@@ -404,4 +466,3 @@ class Grouper:
             src_stats_fn=self.src_stats_fn,
             progress=self.progress,
         )
-

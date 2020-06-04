@@ -4,6 +4,8 @@ from .utils import (
     compute_distances_between_valid_pixels,
     distances_between_valid_pixels,
     PathHelper,
+    area_ratio,
+    valid_region,
 )
 from .binwrap import *
 from .annotator import Annotation, Annotator, ANT_SUFFIX

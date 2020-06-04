@@ -1,7 +1,7 @@
 """Contains basic common utility functions that could foreseeably
 be used outside of pyink
 """
-from typing import List, Set, Dict, Tuple, Optional, Union, Any
+from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable
 import logging
 import os
 import shutil
@@ -91,6 +91,88 @@ def distances_between_valid_pixels(
     max_pos = np.unravel_index(np.argmax(dist), dist.shape)
 
     return (max_dist, max_pos, dist)
+
+
+def valid_region(
+    filter: np.ndarray,
+    filter_includes: Union[int, Iterable[int]] = None,
+    filter_excludes: Union[int, Iterable[int]] = None,
+) -> np.ndarray:
+    """Constructs a valid region based on whether labels are present or not. If `None` is specified
+    for `fliter_includes` all non-zero pixels will be considered as valid
+
+    Arguments:
+        filter {np.ndarray} -- Filter to use as the base
+
+    Keyword Arguments:
+        filter_includes {Union[int, Iterable[int]]} -- Labels to include in the masked region (default: {None})
+        filter_excludes {Union[int, Iterable[int]]} -- Labels to exclude from the region (default: {None})
+
+    Returns:
+        np.ndarray -- Boolean masked constructed following the specifications
+    """
+    mask = np.zeros_like(filter, dtype=np.bool)
+    if filter_includes is None:
+        mask = filter != 0
+    else:
+        if isinstance(filter_includes, int):
+            filter_includes = [
+                filter_includes,
+            ]
+
+        for fi in filter_includes:
+            mask = mask | (filter % fi == 0)
+
+    if filter_excludes is None:
+        return mask
+
+    else:
+        if isinstance(filter_excludes, int):
+            filter_excludes = [
+                filter_excludes,
+            ]
+
+        for fe in filter_excludes:
+            mask = mask & ~(filter % fe == 0)
+
+        return mask
+
+
+def area_ratio(
+    filter1: np.ndarray,
+    filter2: np.ndarray,
+    filter_includes=None,
+    filter_excludes=None,
+    empty_check: bool = True,
+) -> float:
+    """Compute the order of the filters by the relative ratio between desired regions in each filter. 
+
+    Arguments:
+        filter1 {np.ndarray} -- Desired filter 1
+        filter2 {np.ndarray} -- Desired filter 2
+    
+    Keyword Arguments:
+        filter_includes {Union[int, Iterable[int]]} -- Labels to include in the masked region (default: {None})
+        filter_excludes {Union[int, Iterable[int]]} -- Labels to exclude from the region (default: {None})
+        empty_check {bool} -- If `filter2` has no valid pixels, the returned ratio will be `1` to prevent non-finite values from being returned (default: {True})
+
+    Returns:
+        float -- the ratio between the valid areas, computed as `filter1 / filter1`
+    """
+    mask1 = valid_region(
+        filter1, filter_includes=filter_includes, filter_excludes=filter_excludes
+    )
+    mask2 = valid_region(
+        filter2, filter_includes=filter_includes, filter_excludes=filter_excludes
+    )
+
+    mask1_sum = np.sum(mask1)
+    mask2_sum = np.sum(mask2)
+
+    if empty_check and mask2_sum == 0:
+        mask2_sum = mask1_sum
+
+    return mask1_sum / mask2_sum
 
 
 class PathHelper:
