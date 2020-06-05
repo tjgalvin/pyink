@@ -705,7 +705,7 @@ class Annotator:
         logger.info(f"Loaded SOM {som}...")
 
         self.results: Dict[tuple, Annotation] = {}
-        if results is not None:
+        if results not in [None, False]:
             if isinstance(results, str):
                 try:
                     with open(results, "rb") as infile:
@@ -731,7 +731,7 @@ class Annotator:
                     f"Expected either a path of a pickled Annotator or a Dict are accepted, got {type(results)}"
                 )
 
-        self.save: str
+        self.save: Union[str, None] = None
         if save == True:
             self.save = f"{self.som.path}.{ANT_SUFFIX}"
         elif isinstance(save, str):
@@ -862,12 +862,17 @@ class Annotator:
 
         idx: int = 0
         while idx < len(neurons):
-
             if resume:
-                if idx in self.results.keys():
+                if neurons[idx] in self.results.keys():
+                    logger.debug(
+                        f"`resume` argument invoked and {neurons[idx]} found. Skipping. "
+                    )
                     idx += 1
                     continue
                 else:
+                    logger.debug(
+                        f"`resume` argument invokked and {neurons[idx]} not found. Starting annotation."
+                    )
                     resume = False
 
             key: tuple = neurons[idx]

@@ -6,7 +6,7 @@ from typing import Tuple, Any
 import platform
 import logging
 
-logger = logging.getLogger("pyink.annotation")
+logger = logging.getLogger("pyink.annotator")
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
@@ -64,15 +64,16 @@ def perform_annotation(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Initiate the manual annotation of a SOM"
+        description="Initiate the manual annotation of a SOM",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("som", help="Path to the desired SOM to annotate")
     parser.add_argument(
-        "-s",
-        "--save",
+        "-d",
+        "--dont-save",
         help="Automatically save the annotations using the default naming scheme (appending `.results.pkl). Default behaviour of the `Annotator` class is to save after each neuron has been annotated. ",
-        default=True,
-        action="store_false",
+        default=False,
+        action="store_true",
     )
     parser.add_argument(
         "-k",
@@ -86,12 +87,11 @@ if __name__ == "__main__":
         default=False,
         nargs="?",
         const=True,
-        help="The path to a previously saved annotation set, only used when `--key` is supplied and is meant for when a non-standard naming scheme is used (see the `--save`). ",
+        help="The path to a previously saved annotation set. If a path is provided attempt to load from it. If just the option flag is presented assume the desired file follows the default naming scheme (see the `--save`). Otherwise, do not attempt to load any existing results file. ",
     )
     parser.add_argument(
         "-c",
         "--resume",
-        default=None,
         action="store_true",
         help="Continue the annotation process from the first un-annotated neuron (skip those already labeled)",
     )
@@ -99,8 +99,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.key is None:
+        if args.resume == True and args.results is False:
+            args.results = True
+
         perform_annotation(
-            args.som, results=args.results, save=args.save, resume=args.resume
+            args.som, results=args.results, save=not args.dont_save, resume=args.resume
         )
 
     else:
