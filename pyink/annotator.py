@@ -724,7 +724,7 @@ class Annotator:
                         self.results = pickle.load(infile)
                 except FileNotFoundError:
                     logger.warn(
-                        f"Results file {self.som.path}.{ANT_SUFFIX} no found. Continuing with an empty result set. "
+                        f"Results file {self.som.path}.{ANT_SUFFIX} not found. Continuing with an empty result set. "
                     )
             else:
                 raise ValueError(
