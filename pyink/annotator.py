@@ -832,13 +832,15 @@ class Annotator:
         else:
             return ant
 
-    def interactive_annotate(self, labeling: bool = True):
+    def interactive_annotate(self, labeling: bool = True, resume: bool = True):
         """Interate over the neurons in a SOM and call annotate_neuron. This method
         manages progressing over all neurons upon the SOM surface and saving their results. 
         Provided certain user prompts, certain actions are taken. 
         
-        Arguments:
-            labeling {bool} -- Allow text labels to be added and select through a textbox / checkbox system
+        Keyword Arguments:
+            labeling {bool} -- Allow text labels to be added and select through a textbox / checkbox system (default: {True})
+            resume {bool} -- If True, continue annotating from the first neuron encountered that has not been annotated. If False,
+                            iterate over the neurons normally, even if they have previously been annotated. (default: {False})
         """
 
         neurons: List[tuple] = [k for k in self.som]
@@ -848,6 +850,13 @@ class Annotator:
 
         idx: int = 0
         while idx < len(neurons):
+
+            if resume:
+                if idx in self.results.keys():
+                    idx += 1
+                    continue
+                else:
+                    resume = False
 
             key: tuple = neurons[idx]
             callback, ant = self.annotate_neuron(

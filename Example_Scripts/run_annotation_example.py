@@ -46,7 +46,7 @@ def update_annotation(som: str, key: Tuple[Any, ...], results: str = None):
     annotator.save_annotation_results(results_path)
 
 
-def perform_annotation(som: str, save: bool = True):
+def perform_annotation(som: str, save: bool = True, resume: bool = False):
     """A simple driver to perform annotation of a `SOM`
 
     Arguments:
@@ -54,9 +54,10 @@ def perform_annotation(som: str, save: bool = True):
 
     Keyword Arguments:
         save {bool} -- Save the annotations as they are being performed (default: {True})
+        resume {bool} -- Continue the annotation process from the first un-annotated neuron (default: {False})
     """
     annotator = pu.Annotator(som, save=save)
-    annotator.interactive_annotate()
+    annotator.interactive_annotate(resume=resume)
 
 
 if __name__ == "__main__":
@@ -82,13 +83,20 @@ if __name__ == "__main__":
         "--results",
         default=False,
         nargs=1,
-        help="The path to a previously saved annotation set. ",
+        help="The path to a previously saved annotation set, only used when `--key` is supplied and is meant for when a non-standard naming scheme is used (see the `--save`). ",
+    )
+    parser.add_argument(
+        "-c",
+        "--resume",
+        default=False,
+        action="store_true",
+        help="Continue the annotation process from the first un-annotated neuron (skip those already labeled)",
     )
 
     args = parser.parse_args()
 
     if args.key is None:
-        perform_annotation(args.som, save=args.save)
+        perform_annotation(args.som, save=args.save, resume=args.resume)
 
     else:
         key = tuple(int(t) for t in args.key)

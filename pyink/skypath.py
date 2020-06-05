@@ -160,6 +160,7 @@ class SkyPath:
             positions, *args, idxs_items=self.idxs, **kwargs
         )
         self.maximum_distance = maximum_distance(self.separations, *args, **kwargs)
+        self.maximum_position_angle = self.maximum_distance_positions[0].position_angle(self.maximum_distance_positions[1])
         self.shortest_path = shortest_path_between(
             self.separations, self.maximum_distance[0], *args, **kwargs
         )
