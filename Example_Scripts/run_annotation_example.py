@@ -84,25 +84,25 @@ if __name__ == "__main__":
         "-r",
         "--results",
         default=False,
-        nargs=1,
+        nargs="?",
+        const=True,
         help="The path to a previously saved annotation set, only used when `--key` is supplied and is meant for when a non-standard naming scheme is used (see the `--save`). ",
     )
     parser.add_argument(
         "-c",
         "--resume",
-        default=False,
+        default=None,
         action="store_true",
         help="Continue the annotation process from the first un-annotated neuron (skip those already labeled)",
     )
 
     args = parser.parse_args()
-    results = args.results[0] if not args.results is False else None
 
     if args.key is None:
         perform_annotation(
-            args.som, results=results, save=args.save, resume=args.resume
+            args.som, results=args.results, save=args.save, resume=args.resume
         )
 
     else:
         key = tuple(int(t) for t in args.key)
-        update_annotation(args.som, key, results=results)
+        update_annotation(args.som, key, results=args.results)
