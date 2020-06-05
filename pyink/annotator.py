@@ -704,20 +704,32 @@ class Annotator:
         self.som = pu.SOM(som) if isinstance(som, str) else som
         logger.info(f"Loaded SOM {som}...")
 
-        if results is None:
-            self.results: Dict[tuple, Annotation] = {}
-        elif isinstance(results, str):
-            with open(results, "rb") as infile:
-                self.results = pickle.load(infile)
-        elif isinstance(results, dict):
-            self.results = results
-        elif results == True:
-            with open(f"{self.som.path}.{ANT_SUFFIX}", "rb") as infile:
-                self.results = pickle.load(infile)
-        else:
-            raise ValueError(
-                f"Expected either a path of a pickled Annotator or a Dict are accepted, got {type(results)}"
-            )
+        self.results: Dict[tuple, Annotation] = {}
+        if results is not None:
+            if isinstance(results, str):
+                try:
+                    with open(results, "rb") as infile:
+                        self.results = pickle.load(infile)
+                except FileNotFoundError:
+                    logger.warn(
+                        f"Results file {results} not found. Continuing with an empty result set."
+                    )
+
+            elif isinstance(results, dict):
+                self.results = results
+
+            elif results == True:
+                try:
+                    with open(f"{self.som.path}.{ANT_SUFFIX}", "rb") as infile:
+                        self.results = pickle.load(infile)
+                except FileNotFoundError:
+                    logger.warn(
+                        f"Results file {self.som.path}.{ANT_SUFFIX} no found. Continuing with an empty result set. "
+                    )
+            else:
+                raise ValueError(
+                    f"Expected either a path of a pickled Annotator or a Dict are accepted, got {type(results)}"
+                )
 
         self.save: str
         if save == True:
