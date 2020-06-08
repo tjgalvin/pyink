@@ -744,7 +744,6 @@ class Annotator:
         cmap: str = "bwr",
         labeling: bool = False,
         update: bool = False,
-        label_txt: List[Tuple[str, int]] = None,
     ):
         """Perform the annotation for a specified neuron
         
@@ -759,7 +758,6 @@ class Annotator:
             cmap {str} -- colour map style (default: {'bwr'})
             labeling {bool} -- enabling the interactive creation and assignment of labels (default: {False})
             update {bool} -- automatically save the `Annotation` to the results (default: {False})
-            label_txt {List[Any]} -- Helper to explicitly set the label set. This is sometimes lost when pickling / unpickling / updating in some edge cases. (default: {None})
 
         Returns:
             [Callback, Annotation] -- matplotlib action information, neuron annotation
