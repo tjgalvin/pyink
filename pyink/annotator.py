@@ -748,6 +748,7 @@ class Annotator:
         colorbar: bool = True,
         vmin: float = None,
         vmax: float = None,
+        grid: bool = True,
     ):
         """Perform the annotation for a specified neuron
         
@@ -765,6 +766,7 @@ class Annotator:
             colorbar {bool} -- enable colorbars for the neuron plots (default: {True})
             vmin {float} -- minimum colour intensity passed to `imshow` for the neurons (default: {None})
             vmax {float} -- maximum colour intensity passed to `imshow` for the neurons (default: {None})
+            grid {bool} -- enable the pixel grid overlay for the neurons (default: {True})
 
         Returns:
             [Callback, Annotation] -- matplotlib action information, neuron annotation
@@ -827,9 +829,11 @@ class Annotator:
             logger.debug(f"Loading neuron image channel {i+1} of {neuron.shape[0]}")
             cim = ax.imshow(n, cmap=cmap, vmin=vmin, vmax=vmax)
             overlay_clicks(ant, ax, index=i)
-            ax.axvline(n.shape[0] / 2, color="black", ls="--", alpha=0.5)
-            ax.axhline(n.shape[1] / 2, color="black", ls="--", alpha=0.5)
-            ax.grid(which="major", axis="both", color="white", alpha=0.4)
+
+            if grid:
+                ax.axvline(n.shape[0] / 2, color="black", ls="--", alpha=0.5)
+                ax.axhline(n.shape[1] / 2, color="black", ls="--", alpha=0.5)
+                ax.grid(which="major", axis="both", color="white", alpha=0.4)
 
             if colorbar:
                 divider = make_axes_locatable(ax)

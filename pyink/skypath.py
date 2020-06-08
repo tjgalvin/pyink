@@ -59,7 +59,9 @@ def shortest_path_between(
         return (start_end, separations[start_end])
 
     # This will significantly speed up the (potentially big!) set of
-    # paths to test.
+    # paths to test. The resolution of the `units` types and access of
+    # the `values` attribute add a very considerable amount of overhead. 
+    # Adding these went from ~200 it/s to 100000 it/s.
     for k, v in separations.items():
         if isinstance(v, u.Quantity):
             separations[k] = v.to(u.deg).value
@@ -69,7 +71,7 @@ def shortest_path_between(
         enumerate(permutations(path_idxs, len(path_idxs))), disable=not progress
     ):
         if i > max_iterations:
-            warnings.warn(f"Maximum iterations of {max_iterations} while searching for the best path. ")
+            warnings.warn(f"Maximum iterations of {max_iterations} reached while searching for the best path. ")
             break
 
         total_path = [start_end[0]] + list(sub_path) + [start_end[1]]
