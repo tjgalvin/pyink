@@ -12,6 +12,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.widgets import LassoSelector, CheckButtons, TextBox
 from matplotlib.path import Path
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.segmentation import flood
 
 import pyink as pu
@@ -744,6 +745,9 @@ class Annotator:
         cmap: str = "bwr",
         labeling: bool = False,
         update: bool = False,
+        colorbar: bool = True,
+        vmin: float = None,
+        vmax: float = None,
     ):
         """Perform the annotation for a specified neuron
         
@@ -758,6 +762,9 @@ class Annotator:
             cmap {str} -- colour map style (default: {'bwr'})
             labeling {bool} -- enabling the interactive creation and assignment of labels (default: {False})
             update {bool} -- automatically save the `Annotation` to the results (default: {False})
+            colorbar {bool} -- enable colorbars for the neuron plots (default: {True})
+            vmin {float} -- minimum colour intensity passed to `imshow` for the neurons (default: {None})
+            vmax {float} -- maximum colour intensity passed to `imshow` for the neurons (default: {None})
 
         Returns:
             [Callback, Annotation] -- matplotlib action information, neuron annotation
@@ -818,11 +825,16 @@ class Annotator:
 
         for i, (n, ax) in enumerate(zip(neuron, axes.flat)):
             logger.debug(f"Loading neuron image channel {i+1} of {neuron.shape[0]}")
-            ax.imshow(n, cmap=cmap)
+            cim = ax.imshow(n, cmap=cmap, vmin=vmin, vmax=vmax)
             overlay_clicks(ant, ax, index=i)
             ax.axvline(n.shape[0] / 2, color="black", ls="--", alpha=0.5)
             ax.axhline(n.shape[1] / 2, color="black", ls="--", alpha=0.5)
             ax.grid(which="major", axis="both", color="white", alpha=0.4)
+
+            if colorbar:
+                divider = make_axes_locatable(ax)
+                cax = divider.append_axes("right", pad="0%", size="5%")
+                fig1.colorbar(cim, cax=cax)
 
         for i, _ in enumerate(ant.filters.keys()):
             logger.debug(
