@@ -61,7 +61,7 @@ def shortest_path_between(
     # This will significantly speed up the (potentially big!) set of
     # paths to test. The resolution of the `units` types and access of
     # the `values` attribute add a very considerable amount of overhead. 
-    # Adding these went from ~200 it/s to 100000 it/s.
+    # Adding this went from ~200 it/s to 100000 it/s.
     for k, v in separations.items():
         if isinstance(v, u.Quantity):
             separations[k] = v.to(u.deg).value

@@ -47,6 +47,8 @@ PRIMES = {
 }
 
 # TODO: Consider using a bitmask instead of PRIMES?
+# TODO: Implement two classes, one for clicks and one for lasso region and
+#       use a list to give a stack behaviour, unified across all axes
 
 
 class Annotation:
@@ -741,6 +743,7 @@ class Annotator:
     def annotate_neuron(
         self,
         key: tuple,
+        *args,
         return_callback: bool = False,
         cmap: str = "bwr",
         labeling: bool = False,
@@ -749,6 +752,7 @@ class Annotator:
         vmin: float = None,
         vmax: float = None,
         grid: bool = True,
+        **kwargs,
     ):
         """Perform the annotation for a specified neuron
         
@@ -848,6 +852,8 @@ class Annotator:
             mask_ax.imshow(ant.filters[i])
             overlay_clicks(ant, mask_ax, index=i)
 
+        fig1.tight_layout()
+
         plt.show()
 
         if update:
@@ -858,10 +864,14 @@ class Annotator:
         else:
             return ant
 
-    def interactive_annotate(self, labeling: bool = True, resume: bool = True):
+    def interactive_annotate(
+        self, *args, labeling: bool = True, resume: bool = True, **kwargs
+    ):
         """Interate over the neurons in a SOM and call annotate_neuron. This method
         manages progressing over all neurons upon the SOM surface and saving their results. 
         Provided certain user prompts, certain actions are taken. 
+
+        Positional and keyword arguments not described here are passed to `annotate_neuron`. 
         
         Keyword Arguments:
             labeling {bool} -- Allow text labels to be added and select through a textbox / checkbox system (default: {True})
@@ -891,7 +901,7 @@ class Annotator:
 
             key: tuple = neurons[idx]
             callback, ant = self.annotate_neuron(
-                key, return_callback=True, labeling=labeling
+                key, *args, return_callback=True, labeling=labeling, **kwargs
             )
 
             if callback.next_move == "next":

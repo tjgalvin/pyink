@@ -36,7 +36,9 @@ def update_annotation(som: str, key: Tuple[Any, ...], results: str = None):
     Keyword Arguments:
         results {str} -- Path to existing results Annotator set. Default will atempt to automatically find one. (default: {None})
     """
+    print(results)
     results_path = True if results is None else results
+    print(results_path)
 
     annotator = pu.Annotator(som, results=results_path)
     annotator.annotate_neuron(key, update=True, labeling=True)
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-d",
         "--dont-save",
-        help="Automatically save the annotations using the default naming scheme (appending `.results.pkl). Default behaviour of the `Annotator` class is to save after each neuron has been annotated. ",
+        help="The default behaviour of the `Annotator` class is to save when moving between neurons (by default appending `.results.pkl` to the SOM path). This disables the behaviour. ",
         default=False,
         action="store_true",
     )
@@ -87,13 +89,13 @@ if __name__ == "__main__":
         default=False,
         nargs="?",
         const=True,
-        help="The path to a previously saved annotation set. If a path is provided attempt to load from it. If just the option flag is presented assume the desired file follows the default naming scheme (see the `--save`). Otherwise, do not attempt to load any existing results file. ",
+        help="The path to a previously saved annotation set. If a path is provided attempt to load from it. If just the option flag is presented assume the desired file follows the default naming scheme (see the `--save` option). Otherwise, do not attempt to load any existing results file. ",
     )
     parser.add_argument(
         "-c",
         "--resume",
         action="store_true",
-        help="Continue the annotation process from the first un-annotated neuron (skip those already labeled)",
+        help="Continue the annotation process from the first un-annotated neuron, skipping those already labeled",
     )
 
     args = parser.parse_args()
@@ -108,4 +110,6 @@ if __name__ == "__main__":
 
     else:
         key = tuple(int(t) for t in args.key)
+        if args.results == False:
+            args.results = True
         update_annotation(args.som, key, results=args.results)
