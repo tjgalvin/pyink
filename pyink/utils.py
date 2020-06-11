@@ -5,6 +5,7 @@ from typing import List, Set, Dict, Tuple, Optional, Union, Any, Iterable
 import logging
 import os
 import shutil
+import warnings
 
 import numpy as np
 from scipy.ndimage import rotate
@@ -87,10 +88,18 @@ def distances_between_valid_pixels(
                                                 which pixels these were, and distance matrix
     """
     dist = compute_distances_between_valid_pixels(mask)
-    max_dist = np.max(dist)
-    max_pos = np.unravel_index(np.argmax(dist), dist.shape)
+    try:
+        max_dist = np.max(dist)
+        max_pos = np.unravel_index(np.argmax(dist), dist.shape)
 
-    return (max_dist, max_pos, dist)
+        return (max_dist, max_pos, dist)
+    except ValueError:
+        # if there are no valid pixels in the mask, nothing can be done.
+        # return a negative distance.
+        warnings.warn(
+            "Empty mask detected from which no maximum distance can be computed. "
+        )
+        return (-1, np.ndarray([-1 for _ in dist.shape]), dist)
 
 
 def valid_region(
