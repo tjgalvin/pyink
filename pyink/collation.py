@@ -38,6 +38,8 @@ class Action(Enum):
     PASS = auto()
     NODE_ATTACH = auto()
     DATA_ATTACH = auto()
+    TRUE_ATTACH = auto()
+    FALSE_ATTACH = auto()
     ISOLATE = auto()
 
 
@@ -384,6 +386,14 @@ def greedy_graph(
                 elif action == pu.Action.DATA_ATTACH:
                     edge_data[label] = src_filter.coords.src_idx[mask]
 
+                elif action == pu.Action.TRUE_ATTACH:
+                    if np.sum(mask) > 0:
+                        edge_data[label] = True
+
+                elif action == pu.Action.FALSE_ATTACH:
+                    if np.sum(mask) > 0:
+                        edge_data[label] = False
+
                 elif action == pu.Action.LINK:
                     node_link.extend(list(src_filter.coords.src_idx[mask]))
 
@@ -410,6 +420,8 @@ def greedy_graph(
 
         for idx1, idx2 in combinations(node_link, 2):
             G.add_edge(idx1, idx2, **edge_data)
+
+        G.add_edge(src_idx, src_idx, **edge_data)
 
         for idx1 in node_unlink:
             edges = G.edges(idx1)
