@@ -78,7 +78,7 @@ def shortest_path_between(
         paths.append(
             (
                 tuple(total_path),
-                np.sum([separations[s] for s in zip(total_path[:-1], total_path[1:])]),
+                np.sum([separations[s] for s in zip(total_path[:-1], total_path[1:])])*u.deg,
             )
         )
 
@@ -167,7 +167,7 @@ class SkyPath:
             self.separations, self.maximum_distance[0], *args, **kwargs
         )
         if len(positions) <= 2:
-            self.curliness = 1.0
+            self.curliness = 0*u.deg
         else:
             self.curliness = (
                 self.shortest_path[1] / self.maximum_distance[1]
