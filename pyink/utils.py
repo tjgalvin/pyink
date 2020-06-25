@@ -37,8 +37,32 @@ def _pink_spatial_transform(
     return img
 
 
-def pink_spatial_transform(
+def _reverse_pink_spatial_transform(
     img: np.ndarray, transform: Tuple[np.int8, np.float32]
+) -> np.ndarray:
+    """Applying the PINK spatial transformation to an image, but performed in the reverse order. 
+    This would be useful to align a neuron onto an image. 
+    
+    Arguments:
+        img {np.ndarray} -- Image to spatially transform (should be a neuron)
+        transform {Tuple[np.int8, np.float32]} -- Spatial transformation specification
+    
+    Returns:
+        np.ndarray -- Spatially transformed image
+    """
+
+    flip, angle = transform
+
+    if flip == 1:
+        img = img[::-1]
+
+    img = rotate(img, np.rad2deg(angle), reshape=False)
+
+    return img
+
+
+def pink_spatial_transform(
+    img: np.ndarray, transform: Tuple[np.int8, np.float32], reverse: bool = False
 ) -> np.ndarray:
     """Applying the PINK spatial transformation to an image
     
@@ -46,13 +70,21 @@ def pink_spatial_transform(
         img {np.ndarray} -- Image to spatially transform
         transform {Tuple[np.int8, np.float32]} -- Spatial transformation specification following the PINK standard
     
+    Keyword Arguments:
+        reverse {bool} -- Apply the spatial transform in reverse order (flip first and then rotate). Useful to align a neuron onto an input image. 
+
     Returns:
         np.ndarray -- Spatially transformed image
     """
+    if reverse:
+        transform_func = lambda i, t: _reverse_pink_spatial_transform(i, t)
+    else:
+        transform_func = lambda i, t: _pink_spatial_transform(i, t)
+
     if len(img.shape) == 3:
-        return np.array([_pink_spatial_transform(c_img, transform) for c_img in img])
+        return np.array([transform_func(c_img, transform) for c_img in img])
     elif len(img.shape) == 2:
-        return _pink_spatial_transform(img, transform)
+        return transform_func(img, transform)
     else:
         raise ValueError(
             f"Image to transform must be either of shape (channel, height, width) or (height, width). Got image of shape {img.shape}"
