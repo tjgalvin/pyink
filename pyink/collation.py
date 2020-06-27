@@ -182,8 +182,6 @@ class Sorter:
             else:
                 src_order = np.arange(src_idx.shape[0])
 
-            if not hasattr(src_order, "__iter__"):
-                src_order = np.array((src_order,))
             if len(src_order) > 0:
                 order.extend(src_idx[src_order])
 
@@ -244,8 +242,6 @@ class Sorter:
             else:
                 src_order = np.arange(src_idx.shape[0])
 
-            if not hasattr(src_order, "__iter__"):
-                src_order = np.array((src_order,))
             if len(src_order) > 0:
                 order.extend(src_idx[src_order])
 
