@@ -265,7 +265,9 @@ class Filter:
             np.ndarray -- Bool array corresponding to each coordinate contain the target label
         """
         if isinstance(label_val, str):
-            return np.array(list(map(lambda x: label_val in x, self.coord_labels)))
+            return np.array(
+                list(map(lambda x: label_val in x, self.coord_labels)), dtype=np.bool
+            )
         elif isinstance(label_val, int):
             return self.product_labels % label_val == 0
         else:
