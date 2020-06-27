@@ -770,7 +770,7 @@ class Mapping:
         # A match is when it is True across al dimensions for a single index
         mask = np.all(mask, axis=0)
 
-        return np.squeeze(np.argwhere(mask))
+        return np.array(np.squeeze(np.argwhere(mask)), ndmin=1)
 
 
 class Transform:
