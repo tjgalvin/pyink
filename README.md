@@ -17,3 +17,9 @@ Throughout we use `PINK v2` while developing this module. Note that the binary f
 - astropy
 - scikit-image
 - tqdm
+
+## Development
+
+Collaborators and pull requests are welcome. Please do not hesitate to ask questions or get involved. 
+
+Throughout the code base type annotations, doc-strings and the `black` code formatter have been used, with `mypy` as a linter.  
