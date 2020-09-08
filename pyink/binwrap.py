@@ -24,6 +24,7 @@ from typing import (
 )
 
 import numpy as np
+from matplotlib import pyplot as plt
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 
@@ -565,6 +566,74 @@ class SOM:
             self.header = header
             self.data_start = of.tell()
             self.dtype = resolve_data_type(dtype)
+
+    def plot_neuron(
+        self, neuron: Tuple[int, int] = (0, 0), fig: Union[None, plt.Figure] = None,
+    ):
+        """Plot a single neuron of the SOM across all channels"""
+        shape = self.som_shape[:2]
+        img_shape = self.neuron_shape[-2:]
+        nchan = self.neuron_shape[0]
+
+        # Define a reasonable size for the image
+        if fig is None:
+            base_size = [5, 5]
+            base_size[np.argmin(shape)] = (
+                base_size[np.argmax(shape)] * np.min(shape) / np.max(shape)
+            )
+            base_size[0] *= nchan
+            fig, axes = plt.subplots(
+                1,
+                nchan,
+                sharex=True,
+                sharey=True,
+                figsize=tuple(base_size),
+                constrained_layout=True,
+            )
+
+        for chan, ax in enumerate(fig.axes):
+            ny, nx = neuron
+            ax.imshow(
+                self.data[
+                    chan,
+                    ny * img_shape[0] : (ny + 1) * img_shape[0],
+                    nx * img_shape[1] : (nx + 1) * img_shape[1],
+                ]
+            )
+
+    def explore(self, start: Tuple[int, int] = (0, 0)):
+        """Plotting routine to explore the SOM in manageable and easily navigable chunks.
+        Could be absorbed into SOM.plot_neuron
+        """
+        self.plot_neuron(neuron=start)
+
+        def press(event):
+            print("press", event.key)
+            sys.stdout.flush()
+            if event.key == "up":
+                if neuron[0] != 0:
+                    neuron[0] -= 1
+            if event.key == "down":
+                if neuron[0] != self.som_shape[0] - 1:
+                    neuron[0] += 1
+            if event.key == "left":
+                if neuron[1] != 0:
+                    neuron[1] -= 1
+            if event.key == "right":
+                if neuron[1] != self.som_shape[1] - 1:
+                    neuron[1] += 1
+            print(f"Current neuron: {neuron}")
+
+            xlim = fig.axes[0].set_xlim()
+            ylim = fig.axes[0].set_ylim()
+            self.plot_neuron(neuron=tuple(neuron), fig=fig)
+            fig.canvas.draw()
+            fig.axes[0].set_xlim(xlim)
+            fig.axes[0].set_ylim(ylim)
+
+        neuron = list(start)
+        fig = plt.gcf()
+        fig.canvas.mpl_connect("key_press_event", press)
 
 
 class Mapping:
