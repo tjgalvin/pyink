@@ -577,7 +577,7 @@ class SOM:
 
         # Define a reasonable size for the image
         if fig is None:
-            base_size = [5, 5]
+            base_size = [4, 4]
             base_size[np.argmin(shape)] = (
                 base_size[np.argmax(shape)] * np.min(shape) / np.max(shape)
             )
@@ -593,13 +593,7 @@ class SOM:
 
         for chan, ax in enumerate(fig.axes):
             ny, nx = neuron
-            ax.imshow(
-                self.data[
-                    chan,
-                    ny * img_shape[0] : (ny + 1) * img_shape[0],
-                    nx * img_shape[1] : (nx + 1) * img_shape[1],
-                ]
-            )
+            ax.imshow(self[ny, nx][chan])
 
     def explore(self, start: Tuple[int, int] = (0, 0)):
         """Plotting routine to explore the SOM in manageable and easily navigable chunks.
