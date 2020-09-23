@@ -17,5 +17,6 @@ from .skypath import (
     maximum_distance,
     shortest_path_between,
 )
+from .SOMSampler import SOMSampler
 
 __author__ = "Tim Galvin"
