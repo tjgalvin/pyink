@@ -67,12 +67,22 @@ class SOMSampler:
                 break
             self.add_point(ind)
 
-    def kmeans_sampler(self, N: int):
-        """Use k-means clustering to optimize the position of N points on the SOM"""
+    def kmeans_sampler(self, N: int, mapping: pu.Mapping = None):
+        """Use k-means clustering to optimize the position of N points on the SOM.
+        If a pu.Mapping is provided, weight the clusters by the frequency of each neuron."""
         w, h = self.som.som_shape[:2]
         X = list(product(range(h), range(w)))
-        km = KMeans(N).fit(X)
-        centers = km.cluster_centers_
+        sample_weight = None if mapping is None else mapping.bmu_counts().flatten()
+
+        # Another way to handle incorporating weights
+        # if mapping is not None:
+        #     bmu_counts = mapping.bmu_counts()
+        #     X_inds = np.linspace(0, len(X) - 1, len(X), dtype=int)
+        #     X_inds = np.repeat(X_inds, bmu_counts.flatten().astype(int))
+        #     X = X[X_inds]
+
+        self.km = KMeans(N).fit(X, sample_weight=sample_weight)
+        centers = self.km.cluster_centers_
         for pi in centers:
             self.add_point(tuple(pi.astype(int)))
 
@@ -86,5 +96,5 @@ class SOMSampler:
     def visualize(self):
         img = np.zeros(self.som.som_shape[:2])
         for p in self.points:
-            img[p[0], p[1]] += 1
+            img[p] += 1
         plt.imshow(img)
