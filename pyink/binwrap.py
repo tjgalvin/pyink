@@ -8,7 +8,7 @@ import os as os
 import sys as sys
 import logging
 import pickle
-from itertools import product
+from itertools import product, cycle
 from functools import lru_cache
 from typing import (
     List,
@@ -360,6 +360,26 @@ class ImageReader:
             [self.transform(idx, transform) for idx, transform in zip(idxs, transforms)]
         )
 
+    def reweight(
+        self, old_weights: Sequence[float], new_weights: Sequence[float]
+    ) -> np.ndarray:
+        """Update the weights of the image data (in place).
+        TODO: Return a new ImageReader with the updated weights.
+
+        Args:
+            old_weights (Sequence[float, ...]): [description]
+            new_weights (Sequence[float, ...]): [description]
+        """
+        assert (
+            len(old_weights) == self.data.shape[1]
+            and len(new_weights) == self.data.shape[1]
+        ), ValueError(f"Number of channel weights do not match the number of channels")
+
+        data = np.array(self.data)
+        for chan in range(self.data.shape[1]):
+            data[:, chan] *= new_weights[chan] / old_weights[chan]
+        return data
+
 
 class SOM:
     """A wrapper around the SOM binary files produced by PINK. Only supports 
@@ -568,18 +588,30 @@ class SOM:
             self.dtype = resolve_data_type(dtype)
 
     def plot_neuron(
-        self, neuron: Tuple[int, int] = (0, 0), fig: Union[None, plt.Figure] = None,
+        self,
+        neuron: Tuple[int, int] = (0, 0),
+        fig: Union[None, plt.Figure] = None,
+        trim_to_img_shape: bool = False,
+        show_ticks: bool = False,
     ):
         """Plot a single neuron of the SOM across all channels"""
-        shape = self.som_shape[:2]
-        img_shape = self.neuron_shape[-2:]
+        som_shape = self.som_shape[:2]
+        neuron_shape = self.neuron_shape[-2:]
         nchan = self.neuron_shape[0]
+        cmaps = cycle(["viridis", "plasma", "inferno", "cividis"])
+
+        def trim_to_img(neuron_img, img_shape=None):
+            if img_shape is None:
+                img_shape = int(np.floor(neuron_img.shape[0] / np.sqrt(2)))
+            b1 = (neuron_img.shape[0] - img_shape) // 2
+            b2 = b1 + img_shape
+            return neuron_img[b1:b2, b1:b2]
 
         # Define a reasonable size for the image
         if fig is None:
             base_size = [4, 4]
-            base_size[np.argmin(shape)] = (
-                base_size[np.argmax(shape)] * np.min(shape) / np.max(shape)
+            base_size[np.argmin(som_shape)] = (
+                base_size[np.argmax(som_shape)] * np.min(som_shape) / np.max(som_shape)
             )
             base_size[0] *= nchan
             fig, axes = plt.subplots(
@@ -593,7 +625,13 @@ class SOM:
 
         for chan, ax in enumerate(fig.axes):
             ny, nx = neuron
-            ax.imshow(self[ny, nx][chan])
+            neuron_img = self[ny, nx][chan]
+            if trim_to_img_shape:
+                neuron_img = trim_to_img(neuron_img)
+            ax.imshow(neuron_img, cmap=next(cmaps))
+            if not show_ticks:
+                ax.set_xticks([])
+                ax.set_yticks([])
 
     def explore(self, start: Tuple[int, int] = (0, 0)):
         """Plotting routine to explore the SOM in manageable and easily navigable chunks.
@@ -602,7 +640,6 @@ class SOM:
         self.plot_neuron(neuron=start)
 
         def press(event):
-            print("press", event.key)
             sys.stdout.flush()
             if event.key == "up":
                 if neuron[0] != 0:
@@ -799,7 +836,7 @@ class Mapping:
 
         return np.squeeze(counts)
 
-    @lru_cache(maxsize=16)
+    # @lru_cache(maxsize=16)
     def bmu_ed(self, idx: Union[int, np.ndarray] = None) -> np.ndarray:
         """Returns the similarity measure of the BMU for each source. The BMU will have the smallest
         similarity measure statistic for each image, so it is straight forward to search for. 
