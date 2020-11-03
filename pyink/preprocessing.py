@@ -218,15 +218,17 @@ def island_segmentation(
         yield island_mask
 
 
-def convex_hull(data: np.ndarray) -> np.ndarray:
+def convex_hull(data: np.ndarray, threshold: float = 0.01) -> np.ndarray:
     """Determine the convex hull for an image.
 
     Args:
         data (np.ndarray): Image data to be used to produce the convex hull.
+        threshold (float): Minimum value of the data to include in the convex hull.
 
     Returns:
         np.ndarray: 2D Boolean array of the convex hull.
     """
+    data = data >= threshold
     return convex_hull_image(data)
 
 
