@@ -5,8 +5,9 @@ import logging
 from typing import Tuple, List, Dict, Iterator
 
 import numpy as np
-from skimage.morphology import closing
+from skimage.morphology import closing, convex_hull_image
 from skimage.measure import label
+from astropy.convolution import convolve, Gaussian2DKernel
 
 logger = logging.getLogger(__name__)
 
@@ -215,3 +216,39 @@ def island_segmentation(
         if np.sum(island_mask) <= minimum_island_size:
             continue
         yield island_mask
+
+
+def convex_hull(data: np.ndarray, threshold: float = 0.01) -> np.ndarray:
+    """Determine the convex hull for an image.
+
+    Args:
+        data (np.ndarray): Image data to be used to produce the convex hull.
+        threshold (float): Minimum value of the data to include in the convex hull.
+
+    Returns:
+        np.ndarray: 2D Boolean array of the convex hull.
+    """
+    data = data >= threshold
+    return convex_hull_image(data)
+
+
+def convex_hull_smoothed(
+    data: np.ndarray, sigma: float, threshold: float = 0.01
+) -> np.ndarray:
+    """A smoothed version of the convex hull to ensure the relevant 
+    structures are preserved.
+
+    Args:
+        data (np.ndarray): Data to create the convex
+        sigma (float): Standard deviation of the gaussian kernel for smoothing.
+        threshold (float, optional): Threshold to convert the smoothed convex 
+            hull back to a boolean mask. Defaults to 0.01.
+
+    Returns:
+        np.ndarray: 2D Boolean array for the smoothed convex hull.
+    """
+    hull = convex_hull(data)
+    kernel = Gaussian2DKernel(sigma)
+    smoothed = convolve(hull.astype(np.float32), kernel)
+    mask = smoothed >= threshold
+    return mask
