@@ -361,24 +361,38 @@ class ImageReader:
         )
 
     def reweight(
-        self, old_weights: Sequence[float], new_weights: Sequence[float]
+        self,
+        binary_path: str,
+        old_weights: Sequence[float],
+        new_weights: Sequence[float],
+        verbose: bool = False,
     ) -> np.ndarray:
-        """Update the weights of the image data (in place).
-        TODO: Return a new ImageReader with the updated weights.
+        """Update the weights of the image data.
 
-        Args:
-            old_weights (Sequence[float, ...]): [description]
-            new_weights (Sequence[float, ...]): [description]
+        Arguments:
+            binary_path {str} -- Output path of the image binary file
+            old_weights {Sequence[float, ...]} -- List of original channel weights
+            new_weights {Sequence[float, ...]} -- List of desired channel weights
+            verbose {bool} -- Print a status update every 1000 iterations.
+        
+        Returns:
+            ImageReader -- New instance with the updated weights.
         """
         assert (
             len(old_weights) == self.data.shape[1]
             and len(new_weights) == self.data.shape[1]
         ), ValueError(f"Number of channel weights do not match the number of channels")
 
-        data = np.array(self.data)
-        for chan in range(self.data.shape[1]):
-            data[:, chan] *= new_weights[chan] / old_weights[chan]
-        return data
+        with ImageWriter(binary_path, self.header[4], self.header[-1]) as new_imgs:
+            for i, img in enumerate(self.data):
+                img = np.array(img)
+                if verbose and i % 1000 == 0:
+                    print(f"{i}/{self.data.shape[0]}")
+                for chan in range(self.data.shape[1]):
+                    img[chan] *= new_weights[chan] / old_weights[chan]
+            new_imgs.add(img, attributes=i)
+
+        return ImageReader(binary_path)
 
 
 class SOM:
