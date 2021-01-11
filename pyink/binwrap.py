@@ -384,13 +384,13 @@ class ImageReader:
         ), ValueError(f"Number of channel weights do not match the number of channels")
 
         with ImageWriter(binary_path, self.header[4], self.header[-1]) as new_imgs:
-            for i, img in enumerate(self.data):
+            for i, img in zip(self.records, self.data):
                 img = np.array(img)
                 if verbose and i % 1000 == 0:
                     print(f"{i}/{self.data.shape[0]}")
                 for chan in range(self.data.shape[1]):
                     img[chan] *= new_weights[chan] / old_weights[chan]
-            new_imgs.add(img, attributes=i)
+                new_imgs.add(img, attributes=i)
 
         return ImageReader(binary_path)
 
