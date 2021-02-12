@@ -807,7 +807,7 @@ class Mapping:
             )
             self.dtype = resolve_data_type(dtype)
 
-    def __read_data_indicies(self, idx: Union[int, np.ndarray]) -> np.ndarray:
+    def __read_data_indices(self, idx: Union[int, np.ndarray]) -> np.ndarray:
         """A helper function to provide a common interface to accessing data
 
         Keyword Arguments:
@@ -851,13 +851,14 @@ class Mapping:
         """
         return np.arange(self.data.shape[0]).astype(np.int)
 
-    @lru_cache(maxsize=16)
+    # @lru_cache(maxsize=16)
     def bmu(
         self,
         idx: Union[int, np.ndarray] = None,
         squeeze: bool = True,
         return_idx: bool = False,
         return_tuples: bool = False,
+        bmu_mask: np.ndarray = None,
     ) -> np.ndarray:
         """Return the BMU coordinate for each source image. This corresponds to
         the coordinate of the neuron on the SOM lattice with the smalled ED to
@@ -868,11 +869,17 @@ class Mapping:
             squeeze {bool} -- Remove empty axes from the return np.ndarray (default: {True})
             return_idx {bool} -- Include the source index/indices as part of the returned structure (default: {True})
             return_tuples {bool} -- Return as a list of tuples (default: {False})
+            bmu_mask {np.ndarray} -- A bool mask to specify which bmu to exclude from mapping (True=include).
 
         Returns:
             np.ndarray -- Indices to the BMU on the SOM lattice of each source image
         """
-        data = self.__read_data_indicies(idx)
+        data = self.__read_data_indices(idx)
+
+        if bmu_mask is not None:
+            data = np.ma.masked_array(
+                data, ~np.repeat(bmu_mask[None, ...], data.shape[0], axis=0), fill=1e20,
+            )
 
         bmu = np.array(
             np.unravel_index(
@@ -892,8 +899,11 @@ class Mapping:
 
         return bmu
 
-    def bmu_counts(self) -> np.ndarray:
+    def bmu_counts(self, **kwargs) -> np.ndarray:
         """Return counts of how often a neuron was the best matching unit
+        
+        Keyword Arguments:
+            kwargs -- Additional keywords to pass to Mapping.bmu
         
         Returns:
             np.ndarray -- Counts of how often neuron was the BMU
@@ -902,7 +912,7 @@ class Mapping:
         counts = np.zeros(som_shape)
         coords = product(*[np.arange(i) for i in som_shape])
 
-        bmu_keys = self.bmu(return_idx=True, squeeze=True)
+        bmu_keys = self.bmu(return_idx=True, squeeze=True, **kwargs)
         bz, by, bx = bmu_keys.T
 
         for c in coords:
@@ -911,32 +921,41 @@ class Mapping:
         return np.squeeze(counts)
 
     # @lru_cache(maxsize=16)
-    def bmu_ed(self, idx: Union[int, np.ndarray] = None) -> np.ndarray:
+    def bmu_ed(
+        self, idx: Union[int, np.ndarray] = None, bmu_mask: np.ndarray = None
+    ) -> np.ndarray:
         """Returns the similarity measure of the BMU for each source. The BMU will have the smallest
         similarity measure statistic for each image, so it is straight forward to search for. 
         
         Keyword Arguments:
             idx {Union[int, np.ndarray]} -- Indices of the images to pull information from
+            bmu_mask {np.ndarray} -- A bool mask to specify which bmu to exclude from mapping (True=include).
 
         Returns:
             np.ndarray -- The similarity measure statistic of each image to its BMU
         """
-        data = self.__read_data_indicies(idx)
+        data = self.__read_data_indices(idx)
+
+        if bmu_mask is not None:
+            data = np.ma.masked_array(
+                data, ~np.repeat(bmu_mask[None, ...], data.shape[0], axis=0), fill=1e20
+            )
 
         ed = data.reshape(data.shape[0], -1).min(axis=1)
 
         return ed
 
-    def images_with_bmu(self, key: Tuple[int, ...]) -> np.ndarray:
+    def images_with_bmu(self, key: Tuple[int, ...], **kwargs) -> np.ndarray:
         """Return the indicies of images that have the `key` as their BMU
 
         Arguments:
             key {Tuple[int, ...]} -- Key of the neuron to search for
+            kwargs -- Additional keywords to pass to Mapping.bmu
 
         Returns:
             np.ndarray -- Source indicies that have `key` as their BMU
         """
-        bmu = self.bmu()
+        bmu = self.bmu(**kwargs)
 
         # Create a mask for each axis
         mask = np.array([k == bmu[:, i] for i, k in enumerate(key)])
