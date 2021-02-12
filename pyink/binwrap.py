@@ -681,6 +681,66 @@ class SOM:
         fig.canvas.mpl_connect("key_press_event", press)
 
 
+class SOMWriter:
+    """Class to create a SOM binary file using custom neurons."""
+
+    def __init__(
+        self,
+        binary_path: str,
+        som_shape: Tuple[int, int],
+        neuron_shape: Tuple[int, int],
+        comment: str = None,
+        clobber: bool = False,
+    ):
+        """Creates a new ImageWriter object."""
+        if not clobber and os.path.exists(binary_path):
+            raise ValueError(f"Path Exists: {binary_path}")
+
+        self.fd = open(binary_path, "wb")
+        self.header_start = self.fd.tell()
+
+        self.data_layout = 0  # Cartesian
+        self.neuron_layout = 0
+        self.header_start = 0
+        self.som_shape = som_shape  # e.g. (10, 10)
+        self.neuron_shape = neuron_shape
+        self.neuron_rank = len(self.neuron_shape)
+        self.binary_path = binary_path
+
+        self.create_header()
+
+    def create_header(self):
+        """Internal function used to create a header to the PINK image file
+        """
+
+        self.fd.seek(self.header_start)
+        self.fd.write(st.pack("i", 2))  # version number of PINK
+        self.fd.write(st.pack("i", 1))  # File type
+        self.fd.write(st.pack("i", 0))  # `0' corresponds to float32
+
+        self.fd.write(st.pack("i", int(self.data_layout)))  # square vs hex
+        self.fd.write(st.pack("i", 2))  # Number of SOM dimensions on the lattice
+        for i in self.som_shape:
+            self.fd.write(st.pack("i", int(i)))
+
+        self.fd.write(st.pack("i", int(self.neuron_layout)))  # square vs hex
+        self.fd.write(
+            st.pack("i", int(self.neuron_rank))
+        )  # Number of neuron dimensions
+        for i in self.neuron_shape:
+            self.fd.write(st.pack("i", int(i)))
+
+        self.header_end = self.fd.tell()
+
+    def close(self):
+        """Closes the file descriptor after updating the file header. 
+        """
+        self.fd.close()
+
+    def add(self, img):
+        img.astype("f").tofile(self.fd)
+
+
 class Mapping:
     """Wrapper around a PINK Map binary file. Includes some helper functions. Note that
     this only works for Cartesian SOM lattice layouts. For SOMs trained in three-dimensions
