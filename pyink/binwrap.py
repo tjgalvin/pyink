@@ -945,6 +945,34 @@ class Mapping:
 
         return ed
 
+    def ed(
+        self,
+        N: int = 0,
+        idx: Union[int, np.ndarray] = None,
+        bmu_mask: np.ndarray = None,
+    ) -> np.ndarray:
+        """Returns the similarity measure of the Nth best-matching unit for each source.
+
+        Keyword Arguments:
+            N {int}: The neuron with the Nth closest similarity. Defaults to 0 (the BMU).
+            idx {Union[int, np.ndarray]}: Indices of the images to pull information from.
+            bmu_mask {np.ndarray}: A bool mask to specify which bmu to exclude from mapping (True=include).
+
+        Returns:
+            np.ndarray: The similarity measure statistic of each image to the Nth best neuron.
+        """
+        data = self.__read_data_indices(idx)
+
+        if bmu_mask is not None:
+            data = np.ma.masked_array(
+                data, ~np.repeat(bmu_mask[None, ...], data.shape[0], axis=0), fill=1e20
+            )
+
+        ind = data.reshape(data.shape[0], -1).argsort(axis=1)[:, N]
+        ed = data.flatten()[ind]
+
+        return ed
+
     def images_with_bmu(self, key: Tuple[int, ...], **kwargs) -> np.ndarray:
         """Return the indicies of images that have the `key` as their BMU
 
