@@ -969,7 +969,7 @@ class Mapping:
             )
 
         ind = data.reshape(data.shape[0], -1).argsort(axis=1)[:, N]
-        ed = data.flatten()[ind]
+        ed = data.reshape(data.shape[0], -1)[np.arange(0, data.shape[0]), ind]
 
         return ed
 
