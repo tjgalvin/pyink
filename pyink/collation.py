@@ -139,7 +139,7 @@ class Sorter:
         Returns:
             np.ndarray -- Indicies of sources that were best matching to worst matching
         """
-        ed = self.mapper.bmu_ed()
+        ed = self.mapper.bmu_ed(bmu_mask=self.som.bmu_mask)
         order = np.argsort(ed)
 
         return order
@@ -177,7 +177,7 @@ class Sorter:
             key = ant[0]
             src_idx = self.mapper.images_with_bmu(key)
             if sort_srcs:
-                src_ed = self.mapper.bmu_ed()[src_idx]
+                src_ed = self.mapper.bmu_ed(bmu_mask=self.som.bmu_mask)[src_idx]
                 src_order = np.argsort(src_ed)
             else:
                 src_order = np.arange(src_idx.shape[0])
@@ -237,7 +237,7 @@ class Sorter:
             key = ant[0]
             src_idx = self.mapper.images_with_bmu(key)
             if sort_srcs:
-                src_ed = self.mapper.bmu_ed()[src_idx]
+                src_ed = self.mapper.bmu_ed(bmu_mask=self.som.bmu_mask)[src_idx]
                 src_order = np.argsort(src_ed)
             else:
                 src_order = np.arange(src_idx.shape[0])

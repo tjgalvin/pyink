@@ -362,7 +362,7 @@ class FilterSet:
         src_mask = sky_matches[0] == src_idx
         src_matches = sky_matches[1][src_mask]
 
-        bmu = self.som_set.mapping.bmu(idx=src_idx)
+        bmu = self.som_set.mapping.bmu(idx=src_idx, bmu_mask=self.som_set.som.bmu_mask)
         transform_key = (src_idx, *bmu)
         transform = self.som_set.transform.data[transform_key]
 

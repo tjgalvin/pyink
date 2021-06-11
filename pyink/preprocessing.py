@@ -57,8 +57,10 @@ def rms_estimate(
     if nan_check:
         data = data[np.isfinite(data)]
 
+    cen_func = lambda data: np.median(data)
+
     for i in range(clip_rounds):
-        data = data[np.abs(data) < outlier_thres * clipping_func(data)]
+        data = data[np.abs(data - cen_func(data)) < outlier_thres * clipping_func(data)]
 
     # Attempts to ensure a sane number of bins to fit against
     mask_counts = 0

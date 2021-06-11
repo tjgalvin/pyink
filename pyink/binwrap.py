@@ -320,7 +320,7 @@ class ImageReader:
             Tuple[int, int, int] -- The dimenions of a single source image
         """
         if self.img_rank == 2:
-            return (*self.header[6], 1)
+            return (1, *self.header[6])
         return self.header[6]
 
     def transform(self, idx: int, transform: Tuple[np.int8, np.float32]) -> np.ndarray:
@@ -403,17 +403,19 @@ class SOM:
     TODO: Build in support for the Hexagonal SOM lattice layout
     """
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, bmu_mask: Union[None, str, np.ndarray] = None):
         """Create a wrapped around a PINK SOM binary file
         
         Arguments:
             path {str} -- Path to the PINK SOM binary file
+            bmu_mask {str or np.ndarray} -- A mask used to exclude certain neurons
         """
         self.path = path
         self.offset = header_offset(self.path)
 
         self.__read_header()
         self.__read_data()
+        self.bmu_mask = bmu_mask
 
     def __str__(self):
         """Neat string output for the SOM
@@ -519,6 +521,21 @@ class SOM:
             int -- The total number of pixels across all dimensions for a single neuron
         """
         return np.prod(self.neuron_shape)
+
+    @property
+    def bmu_mask(self):
+        return self._bmu_mask
+
+    @bmu_mask.setter
+    def bmu_mask(self, bmu_mask):
+        """Set the bmu_mask from an array or read it from a file.
+        Should use np.save to store the bmu_mask.
+        """
+        self._bmu_mask = np.load(bmu_mask) if isinstance(bmu_mask, str) else bmu_mask
+        if self._bmu_mask is not None:
+            assert (
+                self._bmu_mask.shape == self.som_shape[1::-1]
+            ), f"Array of shape {self._bmu_mask.shape} does not match SOM dimensions of {self.som_shape[1::-1]}."
 
     def __read_data(self):
         som_shape = self.som_shape
