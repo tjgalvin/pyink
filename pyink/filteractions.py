@@ -301,7 +301,7 @@ class FilterSet:
         
         Keyword Arguments:
             cpu_cores {int} -- The number of CPU cores to use while projecting the filters. The default is to use one (and avoid the ProcessPoolExecutor) (default: {None})
-            seplimit {Angle} -- Matching area for the `search_around_sky` matcher (defaul: {1*astropy.units.arcminute})
+            seplimit {Angle} -- Matching area for the `search_around_sky` matcher (default: {1*astropy.units.arcminute})
             progress {bool} -- Enable the `tqdm` progress bar updates (default: {False})
         """
         self.base_catalogue = base_catalogue
@@ -362,7 +362,7 @@ class FilterSet:
         src_mask = sky_matches[0] == src_idx
         src_matches = sky_matches[1][src_mask]
 
-        bmu = self.som_set.mapping.bmu(idx=src_idx, bmu_mask=self.som_set.som.bmu_mask)
+        bmu = self.som_set.mapping.bmu(idx=src_idx)
         transform_key = (src_idx, *bmu)
         transform = self.som_set.transform.data[transform_key]
 

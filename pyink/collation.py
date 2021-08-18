@@ -86,6 +86,8 @@ class Sorter:
     """Handler to control how objects and their filters are accessed by the greedy graph
     """
 
+    MODES = ["best_matching_first", "largest_first", "area_ratio"]
+
     def __init__(
         self, som_set: pu.SOMSet, *args, mode: str = "best_matching_first", **kwargs
     ):
@@ -115,10 +117,10 @@ class Sorter:
         Keyword Arguments:
             mode {str} -- Sorting mode operation (default: {'best_matching_first'})
         """
-        MODES = ["best_matching_first", "largest_first", "area_ratio"]
-        if mode not in MODES:
+        # MODES = ["best_matching_first", "largest_first", "area_ratio"]
+        if mode not in self.MODES:
             raise NotImplementedError(
-                f"Support order modes are {', '.join(MODES)}, received {mode}"
+                f"Support order modes are {', '.join(self.MODES)}, received {mode}"
             )
 
         self.mode = mode
@@ -139,7 +141,7 @@ class Sorter:
         Returns:
             np.ndarray -- Indicies of sources that were best matching to worst matching
         """
-        ed = self.mapper.bmu_ed(bmu_mask=self.som.bmu_mask)
+        ed = self.mapper.bmu_ed()
         order = np.argsort(ed)
 
         return order
@@ -177,7 +179,7 @@ class Sorter:
             key = ant[0]
             src_idx = self.mapper.images_with_bmu(key)
             if sort_srcs:
-                src_ed = self.mapper.bmu_ed(bmu_mask=self.som.bmu_mask)[src_idx]
+                src_ed = self.mapper.bmu_ed()[src_idx]
                 src_order = np.argsort(src_ed)
             else:
                 src_order = np.arange(src_idx.shape[0])
@@ -237,7 +239,7 @@ class Sorter:
             key = ant[0]
             src_idx = self.mapper.images_with_bmu(key)
             if sort_srcs:
-                src_ed = self.mapper.bmu_ed(bmu_mask=self.som.bmu_mask)[src_idx]
+                src_ed = self.mapper.bmu_ed()[src_idx]
                 src_order = np.argsort(src_ed)
             else:
                 src_order = np.arange(src_idx.shape[0])

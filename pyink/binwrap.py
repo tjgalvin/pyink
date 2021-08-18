@@ -343,7 +343,7 @@ class ImageReader:
     def transform_images(
         self, idxs: Sequence[int], transforms: Sequence[Tuple[int, float]]
     ) -> np.ndarray:
-        """Return a set of transformed images given a set of indicies and PINK transform
+        """Return a set of transformed images given a set of indices and PINK transform
         
         Arguments:
             idxs {Sequence[int]} -- Index of images to return
@@ -403,19 +403,17 @@ class SOM:
     TODO: Build in support for the Hexagonal SOM lattice layout
     """
 
-    def __init__(self, path: str, bmu_mask: Union[None, str, np.ndarray] = None):
+    def __init__(self, path: str):
         """Create a wrapped around a PINK SOM binary file
         
         Arguments:
             path {str} -- Path to the PINK SOM binary file
-            bmu_mask {str or np.ndarray} -- A mask used to exclude certain neurons
         """
         self.path = path
         self.offset = header_offset(self.path)
 
         self.__read_header()
         self.__read_data()
-        self.bmu_mask = bmu_mask
 
     def __str__(self):
         """Neat string output for the SOM
@@ -521,21 +519,6 @@ class SOM:
             int -- The total number of pixels across all dimensions for a single neuron
         """
         return np.prod(self.neuron_shape)
-
-    @property
-    def bmu_mask(self):
-        return self._bmu_mask
-
-    @bmu_mask.setter
-    def bmu_mask(self, bmu_mask):
-        """Set the bmu_mask from an array or read it from a file.
-        Should use np.save to store the bmu_mask.
-        """
-        self._bmu_mask = np.load(bmu_mask) if isinstance(bmu_mask, str) else bmu_mask
-        if self._bmu_mask is not None:
-            assert (
-                self._bmu_mask.shape == self.som_shape[1::-1]
-            ), f"Array of shape {self._bmu_mask.shape} does not match SOM dimensions of {self.som_shape[1::-1]}."
 
     def __read_data(self):
         som_shape = self.som_shape
@@ -664,7 +647,55 @@ class SOM:
                 ax.set_xticks([])
                 ax.set_yticks([])
 
-    def explore(self, start: Tuple[int, int] = (0, 0)):
+    def plot(
+        self,
+        channel: int = 0,
+        fig: plt.Figure = None,
+        show_cbar: bool = False,
+        outfile: str = None,
+        cmap: str = "viridis",
+    ):
+        """Plot one channel of the SOM.
+
+        Args:
+            channel (int, optional): The channel index to plot. Defaults to 0.
+            fig (pyplot.Figure, optional): An existing Figure object to plot to. If None, one is created.
+            show_cbar (bool, optional): Show a colorbar. Defaults to False.
+            outfile (str, optional): Output filename. Defaults to None.
+            cmap (str, optional): Colormap for the image. Defaults to viridis.
+        """
+        shape = self.som_shape[:2]
+
+        if fig is None:
+            base_size = [10, 10]
+            base_size[np.argmin(shape)] = (
+                base_size[np.argmax(shape)] * np.min(shape) / np.max(shape)
+            )
+            if show_cbar:
+                base_size[1] += 2
+            figsize = tuple(base_size)
+            fig, ax = plt.subplots(1, 1, figsize=figsize, constrained_layout=True)
+
+        cmap = ax.imshow(self.data[channel, :, :], cmap=cmap)
+
+        if show_cbar:
+            fig.colorbar(cmap)
+
+        marks_x = np.arange(0, self.som_shape[0] + 1, 1) * self.neuron_shape[1]
+        marks_y = np.arange(0, self.som_shape[1] + 1, 1) * self.neuron_shape[2]
+        ax.set_xticks([])
+        ax.set_yticks([])
+        [ax.axvline(m - 0.5, c="k", ls="-") for m in marks_x]
+        [ax.axhline(m - 0.5, c="k", ls="-") for m in marks_y]
+        ax.set_xlim(xmax=marks_x[-1])
+        ax.set_ylim(ymin=marks_y[-1])
+
+        if outfile is not None:
+            plt.savefig(outfile, dpi=shape[0] * 25)
+        else:
+            plt.show()
+
+    def explore(self, start: Tuple[int, int] = (0, 0), **kwargs):
         """Plotting routine to explore the SOM in manageable and easily navigable chunks.
         Could be absorbed into SOM.plot_neuron
         """
@@ -688,7 +719,7 @@ class SOM:
 
             xlim = fig.axes[0].set_xlim()
             ylim = fig.axes[0].set_ylim()
-            self.plot_neuron(neuron=tuple(neuron), fig=fig)
+            self.plot_neuron(neuron=tuple(neuron), fig=fig, **kwargs)
             fig.canvas.draw()
             fig.axes[0].set_xlim(xlim)
             fig.axes[0].set_ylim(ylim)
@@ -764,7 +795,7 @@ class Mapping:
     the class will reshape the structure to be (X, YZ) as a matter of convenience. 
     """
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, bmu_mask: Union[None, str, np.ndarray] = None):
         """Create a new instance to manage a PINK mapping binary file. Currently
         only works for the Cartesian layout scheme.
 
@@ -772,6 +803,7 @@ class Mapping:
         
         Arguments:
             path {str} -- Path to the PINK mapping binary file
+            bmu_mask {str or np.ndarray} -- A mask used to exclude certain neurons
         """
         self.path = path
         self.offset = header_offset(self.path)
@@ -792,6 +824,7 @@ class Mapping:
             offset=self.data_start,
             shape=data_shape,
         )
+        self.bmu_mask = bmu_mask
 
     def __iter__(self) -> Generator:
         """Produce a index iterating over the input image axis
@@ -828,10 +861,10 @@ class Mapping:
         """A helper function to provide a common interface to accessing data
 
         Keyword Arguments:
-            idxs {Union[int, np.ndarray]} -- Desired indicies to obtain data from )default: {None})
+            idxs {Union[int, np.ndarray]} -- Desired indices to obtain data from )default: {None})
 
         Returns:
-            np.ndarray -- Returned slices for the prodived indicies
+            np.ndarray -- Returned slices for the prodived indices
         """
         if np.issubdtype(type(idx), np.integer):
             idx = np.array([idx])
@@ -868,23 +901,38 @@ class Mapping:
         """
         return np.arange(self.data.shape[0]).astype(np.int)
 
-    # @lru_cache(maxsize=16)
+    @property
+    def bmu_mask(self):
+        return self._bmu_mask
+
+    @bmu_mask.setter
+    def bmu_mask(self, bmu_mask):
+        """Set the bmu_mask from an array or read it from a file.
+        Should use np.save to store the bmu_mask.
+        """
+        self._bmu_mask = np.load(bmu_mask) if isinstance(bmu_mask, str) else bmu_mask
+        if self._bmu_mask is not None:
+            assert (
+                self._bmu_mask.shape == self.som_shape[1::-1]
+            ), f"Array of shape {self._bmu_mask.shape} does not match SOM dimensions of {self.som_shape[1::-1]}."
+
     def bmu(
         self,
         idx: Union[int, np.ndarray] = None,
+        N: int = 0,
         squeeze: bool = True,
         return_idx: bool = False,
         return_tuples: bool = False,
-        bmu_mask: np.ndarray = None,
     ) -> np.ndarray:
         """Return the BMU coordinate for each source image. This corresponds to
         the coordinate of the neuron on the SOM lattice with the smalled ED to
         a source image
         
         Keyword Arguments:
-            idx {Union[int,np.ndarray]} -- The index / indicies to look at. Will default return all (default: {None})
+            idx {Union[int,np.ndarray]} -- The index / indices to look at. Will default return all (default: {None})
+            N {int}: The neuron with the Nth closest similarity. Defaults to 0 (the BMU).
             squeeze {bool} -- Remove empty axes from the return np.ndarray (default: {True})
-            return_idx {bool} -- Include the source index/indices as part of the returned structure (default: {True})
+            return_idx {bool} -- Include the source index/indices as part of the returned structure (default: {False})
             return_tuples {bool} -- Return as a list of tuples (default: {False})
             bmu_mask {np.ndarray} -- A bool mask to specify which bmu to exclude from mapping (True=include).
 
@@ -893,17 +941,20 @@ class Mapping:
         """
         data = self.__read_data_indices(idx)
 
-        if bmu_mask is not None:
+        if self.bmu_mask is not None:
             data = np.ma.masked_array(
-                data, ~np.repeat(bmu_mask[None, ...], data.shape[0], axis=0), fill=1e20,
+                data,
+                ~np.repeat(self.bmu_mask[None, ...], data.shape[0], axis=0),
+                fill=1e20,
             )
 
-        bmu = np.array(
-            np.unravel_index(
-                np.argmin(np.reshape(data, (data.shape[0], -1)), axis=1),
-                data.shape[1:],
-            )
-        ).T
+        if N != 0:
+            # Also works for N==0, but is slow.
+            ind = data.reshape(data.shape[0], -1).argsort(axis=1)[:, N]
+        else:
+            ind = np.argmin(np.reshape(data, (data.shape[0], -1)), axis=1)
+
+        bmu = np.array(np.unravel_index(ind, data.shape[1:],)).T
 
         if return_idx:
             idx = self.srcrange if idx is None else idx
@@ -937,15 +988,18 @@ class Mapping:
 
         return np.squeeze(counts)
 
-    # @lru_cache(maxsize=16)
     def bmu_ed(
-        self, idx: Union[int, np.ndarray] = None, bmu_mask: np.ndarray = None
+        self,
+        idx: Union[int, np.ndarray] = None,
+        N: int = 0,
+        # bmu_mask: np.ndarray = None,
     ) -> np.ndarray:
         """Returns the similarity measure of the BMU for each source. The BMU will have the smallest
         similarity measure statistic for each image, so it is straight forward to search for. 
         
         Keyword Arguments:
             idx {Union[int, np.ndarray]} -- Indices of the images to pull information from
+            N {int}: The neuron with the Nth closest similarity. Defaults to 0 (the BMU).
             bmu_mask {np.ndarray} -- A bool mask to specify which bmu to exclude from mapping (True=include).
 
         Returns:
@@ -953,52 +1007,30 @@ class Mapping:
         """
         data = self.__read_data_indices(idx)
 
-        if bmu_mask is not None:
+        if self.bmu_mask is not None:
             data = np.ma.masked_array(
-                data, ~np.repeat(bmu_mask[None, ...], data.shape[0], axis=0), fill=1e20
+                data,
+                ~np.repeat(self.bmu_mask[None, ...], data.shape[0], axis=0),
+                fill=1e20,
             )
 
-        ed = data.reshape(data.shape[0], -1).min(axis=1)
-
-        return ed
-
-    def ed(
-        self,
-        N: int = 0,
-        idx: Union[int, np.ndarray] = None,
-        bmu_mask: np.ndarray = None,
-    ) -> np.ndarray:
-        """Returns the similarity measure of the Nth best-matching unit for each source.
-
-        Keyword Arguments:
-            N {int}: The neuron with the Nth closest similarity. Defaults to 0 (the BMU).
-            idx {Union[int, np.ndarray]}: Indices of the images to pull information from.
-            bmu_mask {np.ndarray}: A bool mask to specify which bmu to exclude from mapping (True=include).
-
-        Returns:
-            np.ndarray: The similarity measure statistic of each image to the Nth best neuron.
-        """
-        data = self.__read_data_indices(idx)
-
-        if bmu_mask is not None:
-            data = np.ma.masked_array(
-                data, ~np.repeat(bmu_mask[None, ...], data.shape[0], axis=0), fill=1e20
-            )
-
-        ind = data.reshape(data.shape[0], -1).argsort(axis=1)[:, N]
-        ed = data.reshape(data.shape[0], -1)[np.arange(0, data.shape[0]), ind]
+        if N == 0:
+            ed = data.reshape(data.shape[0], -1).min(axis=1)
+        else:
+            ind = data.reshape(data.shape[0], -1).argsort(axis=1)[:, N]
+            ed = data.reshape(data.shape[0], -1)[np.arange(0, data.shape[0]), ind]
 
         return ed
 
     def images_with_bmu(self, key: Tuple[int, ...], **kwargs) -> np.ndarray:
-        """Return the indicies of images that have the `key` as their BMU
+        """Return the indices of images that have the `key` as their BMU
 
         Arguments:
             key {Tuple[int, ...]} -- Key of the neuron to search for
             kwargs -- Additional keywords to pass to Mapping.bmu
 
         Returns:
-            np.ndarray -- Source indicies that have `key` as their BMU
+            np.ndarray -- Source indices that have `key` as their BMU
         """
         bmu = self.bmu(**kwargs)
 
@@ -1009,6 +1041,85 @@ class Mapping:
         mask = np.all(mask, axis=0)
 
         return np.array(np.squeeze(np.argwhere(mask)), ndmin=1)
+
+    def map_labels(self, labels: np.ndarray, idx: np.ndarray = None):
+        """Given a set of `labels`, return the count of each label for each neuron.
+
+        Args:
+            labels (np.ndarray): An array containing the labels for each item.
+            idx (np.ndarray, optional): Indices of the images to pull information from.
+
+        Returns:
+            Dict[...: np.ndarray]: A dict keyed by the unique labels. Each item is an array of bmu_counts.
+        """
+        idx = self.srcrange if idx is None else idx
+        assert len(labels) == len(idx), ValueError(
+            "Lengths of `labels` and must match the number of indices used."
+        )
+
+        label_counts = {
+            lab: self.bmu_counts(idx=idx[labels == lab])
+            for lab in sorted(np.unique(labels))
+        }
+        return label_counts
+
+    def coherence(
+        self, idx: Union[int, np.ndarray] = None, cyclic: bool = False
+    ) -> int:
+        """Count the number of elements whose 2nd best neuron is not adjacent
+        to the BMU
+        
+        Args:
+            idx (np.ndarray, optional): Indices of the images to pull information from. Default: all.
+            cyclic (bool, optional): Specifies whether the SOM is cyclic.
+
+        Returns:
+            int: The number of elements whose 2nd best neuron is adjacent to the BMU.
+        """
+        if cyclic:
+            raise NotImplementedError
+
+        idx = self.srcrange if idx is None else idx
+        bmu = self.bmu(idx=idx)
+        second = self.bmu(idx=idx, N=1)
+        max_sep = np.max(np.abs(bmu - second), axis=1)
+        num_coherent = np.sum(max_sep <= 1)
+        return num_coherent
+
+    def worst_matches(
+        self,
+        N: int = None,
+        frac: float = None,
+        neuron: Tuple[int, ...] = None,
+        return_ed: bool = False,
+    ) -> np.ndarray:
+        """Identify the outlying images in a specified sample.
+
+        Args:
+            N (int, optional): Total number of indices to return. If None, it is calculated from frac.
+            frac (float, optional): The fraction of rows to be returned.
+            neuron (Tuple[int, ...], optional): Tuple of the neuron indices to 
+                restrict the matches to. `None' corresponds to the entire SOM.
+            return_ed (bool, optional): Return the Euclidean distance along with the indices. Default: False.
+
+        Returns:
+            np.ndarray: Array of indices for the worst-matching elements.
+        """
+        idx = None if neuron is None else self.images_with_bmu(neuron)
+
+        if N is None:
+            if frac is None:
+                N = len(self.data.shape[0])
+            else:
+                N = max(1, int(frac * self.data.shape[0]))
+
+        bmu_ed = self.bmu_ed(idx=idx)
+        bad_idx = bmu_ed.argsort()[::-1][:N]
+
+        if return_ed:
+            return bad_idx, bmu_ed[bad_idx]
+
+        return bad_idx
 
 
 class Transform:
